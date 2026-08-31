@@ -1,13 +1,14 @@
-import { createClient } from '@supabase/supabase-js'
+const hasSupabaseGlobal = typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
+export const supabase = hasSupabaseGlobal
+  ? window.supabase.createClient(
+      window.__SUPABASE_URL__ || '',
+      window.__SUPABASE_ANON_KEY__ || '',
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
       },
-    })
+    )
   : null

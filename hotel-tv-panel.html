@@ -293,6 +293,33 @@
     margin-top:16px;
     letter-spacing:0.02em;
   }
+
+  /* POWER TV fallback modal */
+  .power-modal{
+    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+    background:rgba(10,8,14,0.72); backdrop-filter:blur(6px); z-index:100; padding:20px;
+  }
+  .power-modal.open{ display:flex; }
+  .power-card{
+    width:min(480px,100%); background:linear-gradient(180deg,#1d1a24,#241f2e);
+    border:1px solid rgba(255,255,255,0.08); border-radius:18px; padding:26px;
+    box-shadow:0 26px 80px rgba(0,0,0,0.55); text-align:center;
+  }
+  .power-card-icon{
+    width:56px; height:56px; margin:0 auto 14px; border-radius:14px;
+    background:linear-gradient(160deg,#4b3d63,#5c4c78); display:grid; place-items:center; color:#e9e4f4;
+  }
+  .power-card-icon svg{ width:26px; height:26px; }
+  .power-card h3{ font-family:'Fraunces',serif; font-size:19px; font-weight:600; margin:0 0 8px; }
+  .power-card p{ color:#b7aec4; font-size:13.5px; line-height:1.6; margin:0 0 18px; }
+  .power-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .btn-pow{
+    border:none; border-radius:10px; padding:10px 18px; font-size:13px; font-weight:700;
+    cursor:pointer; font-family:'Inter',sans-serif; transition:transform .12s ease, opacity .12s ease;
+  }
+  .btn-pow:active{ transform:scale(0.97); }
+  .btn-pow-primary{ background:linear-gradient(135deg,#c9a469,#a97f44); color:#1d1610; }
+  .btn-pow-ghost{ background:rgba(255,255,255,0.06); color:#f4f1ea; border:1px solid rgba(255,255,255,0.08); }
 </style>
 </head>
 <body>
@@ -325,50 +352,50 @@
     </div>
 
     <div class="grid">
-      <div class="tile photo photo-1 g-hotel" tabindex="0">
+      <div class="tile photo photo-1 g-hotel" tabindex="0" data-info="hotel">
         <div class="tile-label">Hotelske informacije</div>
       </div>
-      <div class="tile photo photo-2 g-restaurant" tabindex="0">
+      <div class="tile photo photo-2 g-restaurant" tabindex="0" data-info="restaurant">
         <div class="tile-label">Restorani i barovi</div>
       </div>
-      <div class="tile photo photo-3 g-wellness" tabindex="0">
+      <div class="tile photo photo-3 g-wellness" tabindex="0" data-info="wellness">
         <div class="tile-label">Wellness &amp; beauty centri</div>
       </div>
 
-      <div class="tile service g-service" tabindex="0">
+      <div class="tile service g-service" tabindex="0" data-info="room-service">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 18h16M6 18a6 6 0 0 1 12 0M12 4v2M12 6a4 4 0 0 1 4 4H8a4 4 0 0 1 4-4Z"/></svg>
         <div class="tile-label">Posluga u sobu</div>
       </div>
 
-      <div class="tile photo photo-4 g-sport" tabindex="0">
+      <div class="tile photo photo-4 g-sport" tabindex="0" data-info="sport">
         <div class="tile-label">Sportske aktivnosti</div>
       </div>
-      <div class="tile photo photo-5 g-nearby" tabindex="0">
+      <div class="tile photo photo-5 g-nearby" tabindex="0" data-info="nearby">
         <div class="tile-label">Zanimljivosti u okolici</div>
       </div>
 
-      <div class="tile icon g-messages" tabindex="0">
+      <div class="tile icon g-messages" tabindex="0" data-info="messages">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
         <div class="tile-label">Poruke</div>
       </div>
-      <div class="tile icon g-wake" tabindex="0">
+      <div class="tile icon g-wake" tabindex="0" data-info="wake">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="13" r="7"/><path d="M12 9v4l2.5 1.5M8 2 4 5M16 2l4 3"/></svg>
         <div class="tile-label">Buđenje</div>
       </div>
-      <div class="tile icon g-hotelservice" tabindex="0">
+      <div class="tile icon g-hotelservice" tabindex="0" data-info="hotel-service">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="2.3"/></svg>
         <div class="tile-label">Hotelski servis</div>
       </div>
-      <div class="tile icon g-orders" tabindex="0">
+      <div class="tile icon g-orders" tabindex="0" data-info="orders">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3h9l3 3v15H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
         <div class="tile-label">Moje narudžbe</div>
       </div>
 
-      <div class="tile icon accent g-tv" tabindex="0">
+      <div class="tile icon accent g-tv" tabindex="0" data-info="tv">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>
         <div class="tile-label">TV</div>
       </div>
-      <div class="tile icon accent g-radio" tabindex="0">
+      <div class="tile icon accent g-radio" tabindex="0" data-info="radio">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="8" cy="14" r="2.2"/><path d="M13 12h5M13 16h3M7 8l7-4"/></svg>
         <div class="tile-label">Radio</div>
       </div>
@@ -377,7 +404,92 @@
   </div>
 </div>
 
-<script>
+<!-- POWER TV fallback modal (shown if app not installed / na desktopu) -->
+<div class="power-modal" id="powerModal" aria-hidden="true">
+  <div class="power-card" role="dialog" aria-modal="true" aria-labelledby="powerModalTitle">
+    <div class="power-card-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>
+    </div>
+    <h3 id="powerModalTitle">POWER TV</h3>
+    <p id="powerModalText">Aplikacija <b id="modalAppName">POWER TV</b> nije pokrenuta.<br>Na Android TV-u provjeri da je instalirana (<code id="modalPackageId"></code>). Na računaru možeš preuzeti APK.</p>
+    <div class="power-actions">
+      <a class="btn-pow btn-pow-primary" id="powerDownloadBtn" href="power-tv.apk" download>⬇ Preuzmi APK</a>
+      <button class="btn-pow btn-pow-ghost" type="button" id="powerInfoBtn">Otvori listu kanala</button>
+      <button class="btn-pow btn-pow-ghost" type="button" id="powerCloseBtn">Zatvori</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalAppName" style="display:none;"></div>
+<div id="modalPackageId" style="display:none;"></div>
+
+<script type="module">
+  // Popuni modal s konfiguracijom iz localStorage
+  (async function(){
+    const app = await loadPowerTvConfig();
+    document.getElementById('modalAppName').textContent = app.name;
+    document.getElementById('modalPackageId').textContent = app.package;
+    document.getElementById('powerModalTitle').textContent = app.name || 'POWER TV';
+  })();
+</script>
+
+<script type="module">
+  // Load admin data storage utilities
+  async function loadAdminEntries(moduleName) {
+    try {
+      const value = localStorage.getItem('tile:' + moduleName);
+      return value ? JSON.parse(value) : [];
+    } catch (error) {
+      console.error('Failed loading admin data for', moduleName, error);
+      return [];
+    }
+  }
+
+  // Map admin categories to TV tile data-info keys
+  const adminToTileKey = {
+    'hotelinfo': 'hotel',
+    'restorani': 'restaurant',
+    'wellness': 'wellness',
+    'sport': 'sport',
+    'okolica': 'nearby',
+    'poruke': 'messages',
+    'budjenje': 'wake',
+    'servis': 'hotel-service',
+    'narudzbe': 'orders',
+    'sobaposluga': 'room-service',
+    'tv': 'tv',
+    'radio': 'radio'
+  };
+
+  // Build infoMap from admin data
+  async function buildInfoMap() {
+    const infoMap = {};
+    
+    for (const [adminKey, tileKey] of Object.entries(adminToTileKey)) {
+      const entries = await loadAdminEntries(adminKey);
+      
+      if (entries.length === 0) {
+        continue; // Skip empty categories
+      }
+
+      // Use first entry's title and subtitle, collect all descriptions as items
+      const firstEntry = entries[0];
+      const items = entries
+        .map(e => e.description || e.title || '')
+        .filter(text => text.length > 0);
+
+      infoMap[tileKey] = {
+        title: firstEntry.title || 'Sadržaj',
+        subtitle: firstEntry.subtitle || firstEntry.description || '',
+        items: items.length > 0 ? items : (firstEntry.description ? [firstEntry.description] : ['Nema dostupnih podataka']),
+        image: firstEntry.image || '',
+        allEntries: entries
+      };
+    }
+
+    return infoMap;
+  }
+
   function updateClock(){
     const now = new Date();
     const hh = String(now.getHours()).padStart(2,'0');
@@ -391,15 +503,149 @@
   updateClock();
   setInterval(updateClock, 1000 * 15);
 
-  // Simple demo interaction: click any tile to see a focus pulse (placeholder for real navigation)
-  document.querySelectorAll('.tile').forEach(t => {
-    t.addEventListener('click', () => {
-      t.animate(
+  // ---- POWER TV app launch ----
+  const POWER_TV_PACKAGE = 'power.bestapps.uk';
+  const POWER_TV_APK_URL = 'power-tv.apk';
+
+  // Read Android app config from localStorage (set via Admin panel)
+  async function loadPowerTvConfig(){
+    try{
+      const value = localStorage.getItem('tile:androidApp');
+      if(value){
+        const app = JSON.parse(value);
+        return {package: app.package || POWER_TV_PACKAGE, name: app.name || 'POWER TV', apkUrl: app.apkUrl || POWER_TV_APK_URL, schema: app.schema || 'android_app'};
+      }
+    }catch(e){}
+    return {package: POWER_TV_PACKAGE, name: 'POWER TV', apkUrl: POWER_TV_APK_URL, schema: 'android_app'};
+  }
+
+  function showPowerTvFallback(){
+    const modal = document.getElementById('powerModal');
+    if(modal) { modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); }
+  }
+  function hidePowerTvFallback(){
+    const modal = document.getElementById('powerModal');
+    if(modal) { modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
+  }
+
+  function launchPowerTV(){
+    const config = await loadPowerTvConfig();
+    const fallbackUrl = new URL('tv-info.html', window.location.href);
+    fallbackUrl.searchParams.set('item','tv');
+
+    // Android intent — primary way to launch installed app from browser / WebView
+    const intentUrl = `intent://#Intent;package=${config.package};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;S.browser_fallback_url=${encodeURIComponent(fallbackUrl.toString())};end`;
+    // Custom scheme fallback (if app registers it)
+    const schemeUrls = [`intent://${config.package}/#Intent;package=${config.package};end`, `${config.schema}://open`];
+
+    let didHide = false;
+    let fallbackTimer = null;
+
+    const clearFallback = () => { if(fallbackTimer) clearTimeout(fallbackTimer); didHide = true; };
+
+    const onVisibility = () => {
+      if(document.hidden || document.visibilityState === 'hidden'){
+        clearFallback();
+        document.removeEventListener('visibilitychange', onVisibility);
+        window.removeEventListener('pagehide', onVisibility);
+        window.removeEventListener('blur', onVisibility);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', onVisibility);
+    window.addEventListener('blur', onVisibility);
+
+    // Show fallback if app did not take foreground within 1.8s (desktop / not installed)
+    fallbackTimer = setTimeout(() => {
+      if(!didHide && !document.hidden){
+        showPowerTvFallback();
+      }
+    }, 1800);
+
+    // Try intent via top navigation (works in Chrome / Android WebView)
+    try { window.location.href = intentUrl; } catch(e) { /* ignore */ }
+
+    // Hidden iframe fallback for older WebViews
+    try {
+      const ifr = document.createElement('iframe');
+      ifr.style.display = 'none';
+      ifr.src = intentUrl;
+      document.body.appendChild(ifr);
+      setTimeout(()=> ifr.remove(), 3000);
+    } catch(e) { /* ignore */ }
+
+    // Also try scheme URLs with small delay
+    setTimeout(() => {
+      if(document.hidden || didHide) return;
+      try { window.location.href = schemeUrls[0]; } catch(e) {}
+    }, 300);
+
+    console.log('[POWER TV] launch intent:', intentUrl, 'package:', config.package);
+  }
+
+  // Modal wiring
+  document.getElementById('powerCloseBtn')?.addEventListener('click', hidePowerTvFallback);
+  document.getElementById('powerModal')?.addEventListener('click', (e) => { if(e.target.id === 'powerModal') hidePowerTvFallback(); });
+  document.getElementById('powerInfoBtn')?.addEventListener('click', () => { hidePowerTvFallback(); openInfoPage('tv'); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') hidePowerTvFallback(); });
+
+  let infoMap = {};
+
+  const openInfoPage = (key) => {
+    const target = new URL('tv-info.html', window.location.href);
+    target.searchParams.set('item', key);
+    window.location.href = target.toString();
+  };
+
+  const handleTileActivate = (key, tileEl) => {
+    // TV pločica → pokreni POWER TV aplikaciju, ne tv-info
+    if(key === 'tv'){
+      launchPowerTV();
+    } else {
+      openInfoPage(key);
+    }
+    if(tileEl?.animate){
+      tileEl.animate(
         [{ transform: 'scale(1)' }, { transform: 'scale(0.97)' }, { transform: 'scale(1)' }],
         { duration: 220, easing: 'ease-out' }
       );
+    }
+  };
+
+  // Initialize tiles after loading admin data
+  async function initializeTiles() {
+    infoMap = await buildInfoMap();
+    
+    // Apply images to tiles if they exist
+    document.querySelectorAll('.tile').forEach(t => {
+      const key = t.dataset.info;
+      const info = infoMap[key];
+      
+      if (info && info.image) {
+        // Set image as background
+        t.style.backgroundImage = `linear-gradient(180deg, rgba(10,8,14,0) 40%, rgba(10,8,14,0.85) 100%), url('${info.image}')`;
+        t.style.backgroundSize = 'cover';
+        t.style.backgroundPosition = 'center';
+      }
     });
-  });
+    
+    document.querySelectorAll('.tile').forEach(t => {
+      t.addEventListener('click', () => {
+        const key = t.dataset.info;
+        if (key) handleTileActivate(key, t);
+      });
+
+      t.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          const key = t.dataset.info;
+          if (key) handleTileActivate(key, t);
+        }
+      });
+    });
+  }
+
+  initializeTiles();
 </script>
 
 </body>
