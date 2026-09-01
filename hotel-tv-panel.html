@@ -423,22 +423,13 @@
 <div id="modalAppName" style="display:none;"></div>
 <div id="modalPackageId" style="display:none;"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-  // Popuni modal s konfiguracijom iz localStorage
-  (async function(){
-    const app = await loadPowerTvConfig();
-    document.getElementById('modalAppName').textContent = app.name;
-    document.getElementById('modalPackageId').textContent = app.package;
-    document.getElementById('powerModalTitle').textContent = app.name || 'POWER TV';
-  })();
-</script>
+  import { loadModuleEntries } from './admin/src/lib/adminStorage.js';
 
-<script type="module">
-  // Load admin data storage utilities
   async function loadAdminEntries(moduleName) {
     try {
-      const value = localStorage.getItem('tile:' + moduleName);
-      return value ? JSON.parse(value) : [];
+      return await loadModuleEntries(moduleName);
     } catch (error) {
       console.error('Failed loading admin data for', moduleName, error);
       return [];
@@ -501,7 +492,32 @@
     document.getElementById('dateDisplay').textContent = dateStr;
   }
   updateClock();
-  setInterval(updateClock, 1000 * 15);
+  setInterval(updateClock, 1000);
+
+  function initializeGuest(){
+    const params = new URLSearchParams(window.location.search);
+    const guest = params.get('guest') || localStorage.getItem('guestName') || 'Gospođo Jozić';
+    const room = params.get('room') || localStorage.getItem('roomNumber') || '6335';
+    document.getElementById('guestName').textContent = guest;
+    document.getElementById('roomNumber').textContent = `Soba ${room}`;
+    localStorage.setItem('guestName', guest);
+    localStorage.setItem('roomNumber', room);
+  }
+  initializeGuest();
+
+  async function updateWeather(){
+    try {
+      const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=44.7722&longitude=17.1910&current=temperature_2m&timezone=auto');
+      if (!response.ok) throw new Error(`Weather request failed: ${response.status}`);
+      const data = await response.json();
+      const temperature = Math.round(data.current.temperature_2m);
+      document.getElementById('temp').textContent = `${temperature > 0 ? '+' : ''}${temperature}°C`;
+    } catch (error) {
+      console.error('Failed loading weather', error);
+    }
+  }
+  updateWeather();
+  setInterval(updateWeather, 1000 * 60 * 10);
 
   // ---- POWER TV app launch ----
   const POWER_TV_PACKAGE = 'power.bestapps.uk';
@@ -528,7 +544,7 @@
     if(modal) { modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
   }
 
-  function launchPowerTV(){
+  async function launchPowerTV(){
     const config = await loadPowerTvConfig();
     const fallbackUrl = new URL('tv-info.html', window.location.href);
     fallbackUrl.searchParams.set('item','tv');
@@ -594,6 +610,10 @@
   const openInfoPage = (key) => {
     const target = new URL('tv-info.html', window.location.href);
     target.searchParams.set('item', key);
+    const params = new URLSearchParams(window.location.search);
+    ['guest', 'room'].forEach((name) => {
+      if (params.has(name)) target.searchParams.set(name, params.get(name));
+    });
     window.location.href = target.toString();
   };
 
@@ -630,6 +650,7 @@
     });
     
     document.querySelectorAll('.tile').forEach(t => {
+      if (t.dataset.bound === 'true') return;
       t.addEventListener('click', () => {
         const key = t.dataset.info;
         if (key) handleTileActivate(key, t);
@@ -642,10 +663,12 @@
           if (key) handleTileActivate(key, t);
         }
       });
+      t.dataset.bound = 'true';
     });
   }
 
   initializeTiles();
+  setInterval(initializeTiles, 1000 * 30);
 </script>
 
 </body>
