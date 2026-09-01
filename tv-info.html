@@ -344,7 +344,9 @@
     <div id="emptyState" style="display:none;"></div>
   </div>
 
-  <script>
+  <script type="module">
+    import { loadModuleEntries } from './admin/src/lib/adminStorage.js'
+
     const CATEGORY_META = {
       'hotel':         { label: 'Hotelske informacije', sub: 'Sve što trebate znati o boravku u Villa Aura.' },
       'restaurant':    { label: 'Restorani i barovi', sub: 'Gastronomska ponuda hotela — restorani, barovi i radno vrijeme.' },
@@ -390,12 +392,11 @@
     }
 
     async function loadAdminEntries(moduleName){
-      try{
-        const value = localStorage.getItem('tile:' + moduleName);
-        return value ? JSON.parse(value) : [];
-      }catch(e){
-        console.error('Failed loading', moduleName, e);
-        return [];
+      try {
+        return await loadModuleEntries(moduleName)
+      } catch (e) {
+        console.error('Failed loading', moduleName, e)
+        return []
       }
     }
 

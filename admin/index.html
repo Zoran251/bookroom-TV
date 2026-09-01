@@ -300,11 +300,12 @@ async function loadCategory(catId){
 async function saveCategory(catId, entries){
   setStatus('Čuvanje…', '');
   try{
-    await window.storage.set('tile:' + catId, JSON.stringify(entries), true);
+    await saveModuleEntries(catId, entries);
     setStatus('Sačuvano', 'ok');
-    setTimeout(()=> setStatus('Spremno',''), 1500);
+    setTimeout(() => setStatus('Spremno', ''), 1500);
   }catch(e){
-    setStatus('Greška — slika je možda prevelika', 'err');
+    console.error('Failed saving category', catId, e);
+    setStatus('Greška pri čuvanju', 'err');
   }
 }
 // Android TV aplikacija — konfiguracija iz localStorage (štita se pod key 'tile:androidApp')
