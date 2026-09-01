@@ -57,6 +57,67 @@ export function getStorageApi() {
   return storage
 }
 
+export async function sendPowerTvCommand(roomNumber) {
+  if (!supabase) throw new Error('Supabase nije podešen.')
+
+  const hotelId = await getHotelId()
+  const { data: room, error: roomError } = await supabase
+    .from('rooms')
+    .select('id')
+    .eq('hotel_id', hotelId)
+    .eq('room_number', roomNumber)
+    .maybeSingle()
+
+  if (roomError) throw roomError
+  if (!room) throw new Error('Za ovu sobu nije pronađena konfiguracija.')
+
+  const { data: device, error: deviceError } = await supabase
+    .from('tv_devices')
+    .select('id, device_id, status, last_seen_at')
+    .eq('hotel_id', hotelId)
+    .eq('room_id', room.id)
+    .maybeSingle()
+
+  if (deviceError) throw deviceError
+  if (!device) throw new Error('Za ovu sobu nije povezan TV.')
+
+  const lastSeen = device.last_seen_at ? Date.parse(device.last_seen_at) : 0
+  const isRecentlySeen = lastSeen > Date.now() - 120000
+  if (device.status === 'offline' || !isRecentlySeen) throw new Error('TV trenutno nije povezan.')
+
+  const { data: command, error: commandError } = await supabase
+    .from('tv_commands')
+    .insert({
+      hotel_id: hotelId,
+      tv_device_id: device.id,
+      command_type: 'OPEN_POWER_TV',
+      payload: {},
+      status: 'pending',
+      sent_by: 'admin-web',
+    })
+    .select('id, status')
+    .single()
+
+  if (commandError) throw commandError
+  return { ...command, deviceId: device.device_id }
+}
+
+export async function subscribeToCommand(commandId, onChange) {
+  if (!supabase) return () => {}
+
+  const channel = supabase
+    .channel(`tv-command-${commandId}`)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'tv_commands',
+      filter: `id=eq.${commandId}`,
+    }, (payload) => onChange(payload.new))
+
+  await channel.subscribe()
+  return () => supabase.removeChannel(channel)
+}
+
 export async function loadModuleEntries(moduleName) {
   if (!supabase) {
     const data = await storage.get(`${STORAGE_KEYS.module}${moduleName}`, true)

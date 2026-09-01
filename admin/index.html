@@ -230,7 +230,7 @@
  
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-import { loadModuleEntries, saveModuleEntries, loadBookings, saveBookings } from './src/lib/adminStorage.js'
+import { loadModuleEntries, saveModuleEntries, loadBookings, saveBookings, sendPowerTvCommand, subscribeToCommand } from './src/lib/adminStorage.js'
 
 const ICONS = {
   hotelinfo: '<path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/>',
@@ -489,6 +489,7 @@ async function renderBookings(){
       </div>
       <span class="badge ${cls}">${label}</span>
       <div class="entry-actions">
+        <button class="btn btn-ghost btn-small" data-action="power-tv" data-room="${escapeAttr(b.room || '')}">TV</button>
         <button class="btn btn-ghost btn-small" data-action="edit" data-id="${b.id}">Uredi</button>
         <button class="btn btn-danger btn-small" data-action="delete" data-id="${b.id}">Obriši</button>
       </div>`;
@@ -503,6 +504,43 @@ async function renderBookings(){
   list.querySelectorAll('[data-action="delete"]').forEach(btn=>{
     btn.addEventListener('click', () => deleteBooking(btn.dataset.id));
   });
+  list.querySelectorAll('[data-action="power-tv"]').forEach(btn=>{
+    btn.addEventListener('click', () => openPowerTv(btn));
+  });
+}
+
+async function openPowerTv(button){
+  const room = button.dataset.room;
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Pokretanje…';
+  setStatus('Pokretanje TV-a…', '');
+  let unsubscribe = () => {};
+  try {
+    const command = await sendPowerTvCommand(room);
+    unsubscribe = await subscribeToCommand(command.id, (updated) => {
+      if (updated.status === 'completed') {
+        setStatus('Power TV pokrenut', 'ok');
+        button.textContent = 'Pokrenut';
+        unsubscribe();
+      } else if (updated.status === 'failed') {
+        setStatus(updated.error_message || 'Power TV nije pokrenut', 'err');
+        button.textContent = originalText;
+        button.disabled = false;
+        unsubscribe();
+      }
+    });
+    setStatus('Komanda poslata TV uređaju', 'ok');
+    button.textContent = 'Poslato';
+    setTimeout(() => {
+      button.disabled = false;
+      button.textContent = originalText;
+    }, 10000);
+  } catch (error) {
+    setStatus(error.message || 'Power TV nije pokrenut', 'err');
+    button.disabled = false;
+    button.textContent = originalText;
+  }
 }
  
 function icon(name){
