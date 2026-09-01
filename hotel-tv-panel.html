@@ -520,7 +520,7 @@
   setInterval(updateWeather, 1000 * 60 * 10);
 
   // ---- POWER TV app launch ----
-  const POWER_TV_PACKAGE = 'power.bestapps.uk';
+  const POWER_TV_PACKAGE = 'com.flextv.livestore';
   const POWER_TV_APK_URL = 'power-tv.apk';
 
   // Read Android app config from localStorage (set via Admin panel)
@@ -545,58 +545,14 @@
   }
 
   async function launchPowerTV(){
+    if (window.HotelTvAndroid && typeof window.HotelTvAndroid.openPowerTv === 'function') {
+      window.HotelTvAndroid.openPowerTv();
+      return;
+    }
+
     const config = await loadPowerTvConfig();
-    const fallbackUrl = new URL('tv-info.html', window.location.href);
-    fallbackUrl.searchParams.set('item','tv');
-
-    // Android intent — primary way to launch installed app from browser / WebView
-    const intentUrl = `intent://#Intent;package=${config.package};action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;S.browser_fallback_url=${encodeURIComponent(fallbackUrl.toString())};end`;
-    // Custom scheme fallback (if app registers it)
-    const schemeUrls = [`intent://${config.package}/#Intent;package=${config.package};end`, `${config.schema}://open`];
-
-    let didHide = false;
-    let fallbackTimer = null;
-
-    const clearFallback = () => { if(fallbackTimer) clearTimeout(fallbackTimer); didHide = true; };
-
-    const onVisibility = () => {
-      if(document.hidden || document.visibilityState === 'hidden'){
-        clearFallback();
-        document.removeEventListener('visibilitychange', onVisibility);
-        window.removeEventListener('pagehide', onVisibility);
-        window.removeEventListener('blur', onVisibility);
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('pagehide', onVisibility);
-    window.addEventListener('blur', onVisibility);
-
-    // Show fallback if app did not take foreground within 1.8s (desktop / not installed)
-    fallbackTimer = setTimeout(() => {
-      if(!didHide && !document.hidden){
-        showPowerTvFallback();
-      }
-    }, 1800);
-
-    // Try intent via top navigation (works in Chrome / Android WebView)
-    try { window.location.href = intentUrl; } catch(e) { /* ignore */ }
-
-    // Hidden iframe fallback for older WebViews
-    try {
-      const ifr = document.createElement('iframe');
-      ifr.style.display = 'none';
-      ifr.src = intentUrl;
-      document.body.appendChild(ifr);
-      setTimeout(()=> ifr.remove(), 3000);
-    } catch(e) { /* ignore */ }
-
-    // Also try scheme URLs with small delay
-    setTimeout(() => {
-      if(document.hidden || didHide) return;
-      try { window.location.href = schemeUrls[0]; } catch(e) {}
-    }, 300);
-
-    console.log('[POWER TV] launch intent:', intentUrl, 'package:', config.package);
+    showPowerTvFallback();
+    console.info('[POWER TV] Native Hotel TV app is required to launch:', config.package);
   }
 
   // Modal wiring
