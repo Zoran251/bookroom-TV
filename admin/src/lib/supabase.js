@@ -1,19 +1,21 @@
 import { createClient } from '@supabase/supabase-js'
 
+const viteEnv = import.meta.env || {}
+
 const getSupabaseUrl = () => {
   if (typeof window !== 'undefined') {
-    return window.__SUPABASE_URL__ || import.meta.env.VITE_SUPABASE_URL || ''
+    return window.__SUPABASE_URL__ || viteEnv.VITE_SUPABASE_URL || ''
   }
 
-  return import.meta.env.VITE_SUPABASE_URL || ''
+  return viteEnv.VITE_SUPABASE_URL || ''
 }
 
 const getSupabaseAnonKey = () => {
   if (typeof window !== 'undefined') {
-    return window.__SUPABASE_ANON_KEY__ || import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+    return window.__SUPABASE_ANON_KEY__ || viteEnv.VITE_SUPABASE_ANON_KEY || ''
   }
 
-  return import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+  return viteEnv.VITE_SUPABASE_ANON_KEY || ''
 }
 
 const supabaseUrl = getSupabaseUrl()
