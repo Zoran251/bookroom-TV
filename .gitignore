@@ -1,0 +1,4 @@
+.vite/
+admin/.env
+admin/.env.*
+!admin/.env.example
