@@ -1,6 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
-
 const viteEnv = import.meta.env || {}
+const createClient = globalThis.supabase?.createClient
 
 const getSupabaseUrl = () => {
   if (typeof window !== 'undefined') {
@@ -22,7 +21,7 @@ const supabaseUrl = getSupabaseUrl()
 const supabaseAnonKey = getSupabaseAnonKey()
 
 export const supabase =
-  supabaseUrl && supabaseAnonKey
+  supabaseUrl && supabaseAnonKey && createClient
     ? createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
           persistSession: false,
