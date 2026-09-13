@@ -20,9 +20,12 @@ const getSupabaseAnonKey = () => {
 const supabaseUrl = getSupabaseUrl()
 const supabaseAnonKey = getSupabaseAnonKey()
 
+const publicSupabaseUrl = supabaseUrl || 'https://uldstujbduldbutjgksd.supabase.co'
+const publicSupabaseAnonKey = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1bGRzdHVqamJkdWxkYnV0amdrc2QiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4ODAzNTcwMSwiZXhwIjoyMTAzNjExNzAxfQ.IAfSJwcDHOUXe7Yolu3_-HJW8tJrzZjLPY-7xE'
+
 export const supabase =
-  supabaseUrl && supabaseAnonKey && createClient
-    ? createClient(supabaseUrl, supabaseAnonKey, {
+  createClient
+    ? createClient(publicSupabaseUrl, publicSupabaseAnonKey, {
         auth: {
           persistSession: true,
           autoRefreshToken: true,

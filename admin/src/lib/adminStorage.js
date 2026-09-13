@@ -56,7 +56,7 @@ export async function getAdminContext() {
 
   const { data, error } = await supabase
     .from('admin_hotel_accounts')
-    .select('hotel_id, hotels(id, name, city)')
+    .select('hotel_id, username, hotel_name, city, hotels(id, name, city)')
     .eq('user_id', user.id)
     .maybeSingle()
 
@@ -73,6 +73,13 @@ export async function loadHotelHeader() {
     .eq('id', hotelId)
     .single()
   if (error) throw error
+
+  const { error: accountError } = await supabase
+    .from('admin_hotel_accounts')
+    .update({ hotel_name: data.name, city: data.city })
+    .eq('hotel_id', hotelId)
+  if (accountError) throw accountError
+
   return data
 }
 

@@ -1,8 +1,19 @@
 create table if not exists public.admin_hotel_accounts (
   user_id uuid primary key references auth.users(id) on delete cascade,
   hotel_id uuid not null unique references public.hotels(id) on delete cascade,
+  username text,
+  hotel_name text,
+  city text,
   created_at timestamptz not null default now()
 );
+
+alter table public.admin_hotel_accounts add column if not exists username text;
+alter table public.admin_hotel_accounts add column if not exists hotel_name text;
+alter table public.admin_hotel_accounts add column if not exists city text;
+
+create unique index if not exists admin_hotel_accounts_username_key
+on public.admin_hotel_accounts (lower(username))
+where username is not null;
 
 alter table public.hotels enable row level security;
 alter table public.admin_hotel_accounts enable row level security;
@@ -45,8 +56,8 @@ begin
   values (hotel_name, hotel_city)
   returning id into new_hotel_id;
 
-  insert into public.admin_hotel_accounts (user_id, hotel_id)
-  values (auth.uid(), new_hotel_id);
+  insert into public.admin_hotel_accounts (user_id, hotel_id, username, hotel_name, city)
+  values (auth.uid(), new_hotel_id, null, hotel_name, hotel_city);
 
   return new_hotel_id;
 end;
@@ -72,8 +83,14 @@ begin
     )
     returning id into new_hotel_id;
 
-    insert into public.admin_hotel_accounts (user_id, hotel_id)
-    values (new.id, new_hotel_id);
+    insert into public.admin_hotel_accounts (user_id, hotel_id, username, hotel_name, city)
+    values (
+      new.id,
+      new_hotel_id,
+      lower(new.raw_user_meta_data ->> 'admin_username'),
+      new.raw_user_meta_data ->> 'hotel_name',
+      new.raw_user_meta_data ->> 'hotel_city'
+    );
   end if;
   return new;
 end;
@@ -99,6 +116,12 @@ drop policy if exists "Admins can read their account" on public.admin_hotel_acco
 create policy "Admins can read their account"
 on public.admin_hotel_accounts for select to authenticated
 using (user_id = auth.uid());
+
+drop policy if exists "Admins can update their account details" on public.admin_hotel_accounts;
+create policy "Admins can update their account details"
+on public.admin_hotel_accounts for update to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
 
 drop policy if exists "Admins can manage their content" on public.admin_form_entries;
 create policy "Admins can manage their content"
