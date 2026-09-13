@@ -5,29 +5,100 @@ const STORAGE_KEYS = {
   bookings: 'bookings',
 }
 
-async function getHotelId() {
+function getAdminIdentity(username) {
+  const normalizedUsername = username.trim().toLowerCase()
+  if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(normalizedUsername)) {
+    throw new Error('Korisničko ime mora imati 3-32 znaka: slova, brojevi, tačka, crtica ili donja crta.')
+  }
+  return `${normalizedUsername}@admins.bookroom.local`
+}
+
+export async function signInAdmin(username, pin) {
+  if (!supabase) throw new Error('Supabase nije podešen.')
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: getAdminIdentity(username),
+    password: pin,
+  })
+  if (error) throw error
+  return data.user
+}
+
+export async function signUpAdmin({ username, pin, hotelName, city }) {
+  if (!supabase) throw new Error('Supabase nije podešen.')
+
+  const { data, error } = await supabase.auth.signUp({
+    email: getAdminIdentity(username),
+    password: pin,
+    options: {
+      data: {
+        admin_username: username.trim().toLowerCase(),
+        hotel_name: hotelName,
+        hotel_city: city || null,
+      },
+    },
+  })
+  if (error) throw error
+  if (!data.user) throw new Error('Registracija nije uspjela.')
+  if (!data.session) throw new Error('Registracija je kreirana. Potvrdi email, zatim se prijavi.')
+
+  return { user: data.user }
+}
+
+export async function signOutAdmin() {
+  if (supabase) await supabase.auth.signOut()
+}
+
+export async function getAdminContext() {
   if (!supabase) return null
 
-  const { data, error } = await supabase.from('hotels').select('id').limit(1)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data, error } = await supabase
+    .from('admin_hotel_accounts')
+    .select('hotel_id, hotels(id, name, city)')
+    .eq('user_id', user.id)
+    .maybeSingle()
 
   if (error) throw error
-  if (data && data.length > 0) return data[0].id
+  return data ? { user, hotelId: data.hotel_id, hotel: data.hotels } : null
+}
 
-  const { data: insertedHotel, error: insertError } = await supabase
+export async function loadHotelHeader() {
+  if (!supabase) return null
+  const hotelId = await getHotelId()
+  const { data, error } = await supabase
     .from('hotels')
-    .insert([
-      {
-        name: 'Hotel Bellevue',
-        city: 'Banja Luka',
-        welcome_text: 'Dobrodošli, goste',
-        phone: '+387 51 222 333',
-        email: 'info@hotelbellevue.ba',
-      },
-    ])
-    .select('id')
+    .select('id, name, city, welcome_text, phone, email')
+    .eq('id', hotelId)
+    .single()
+  if (error) throw error
+  return data
+}
 
-  if (insertError) throw insertError
-  return insertedHotel[0].id
+export async function saveHotelHeader(values) {
+  if (!supabase) throw new Error('Supabase nije podešen.')
+  const hotelId = await getHotelId()
+  const { data, error } = await supabase
+    .from('hotels')
+    .update({
+      name: values.name,
+      city: values.city || null,
+      welcome_text: values.welcomeText || null,
+      phone: values.phone || null,
+      email: values.email || null,
+    })
+    .eq('id', hotelId)
+    .select('id, name, city, welcome_text, phone, email')
+    .single()
+  if (error) throw error
+  return data
+}
+
+async function getHotelId() {
+  const context = await getAdminContext()
+  if (!context) throw new Error('Admin nalog nije povezan s hotelom.')
+  return context.hotelId
 }
 
 function getFallbackStorage() {

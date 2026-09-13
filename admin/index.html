@@ -177,12 +177,50 @@
   .field-row{ display:flex; gap:12px; }
   .field-row .field{ flex:1; }
   .field input[type="date"]{ color-scheme:dark; }
+
+  .auth-gate{ position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; background:var(--bg-room); }
+  .auth-card{ width:100%; max-width:420px; background:var(--panel-2); border:1px solid var(--border); border-radius:16px; padding:28px; }
+  .auth-card h1{ font-family:'Fraunces',serif; font-size:26px; font-weight:500; margin-bottom:8px; }
+  .auth-card p{ color:var(--text-muted); font-size:13px; margin-bottom:20px; }
+  .auth-card .field{ margin-bottom:14px; }
+  .auth-card .btn{ width:100%; justify-content:center; }
+  .auth-toggle{ margin-top:14px; text-align:center; color:var(--text-muted); font-size:12px; cursor:pointer; }
+  .auth-error{ min-height:18px; color:var(--danger); font-size:12px; margin-bottom:10px; }
+  .auth-hotel-fields{ display:none; }
+  .auth-card.register .auth-hotel-fields{ display:block; }
+  .auth-card.register .auth-title-login,
+  .auth-card.register .auth-description-login{ display:none; }
+  .auth-card:not(.register) .auth-title-register,
+  .auth-card:not(.register) .auth-description-register{ display:none; }
+  .auth-card.register .auth-title-register,
+  .auth-card.register .auth-description-register{ display:block; }
+  .auth-card.register .auth-title-register{ margin-bottom:8px; }
+  .auth-card.register .auth-description-register{ margin-bottom:20px; }
+  .logout-btn{ margin-left:12px; }
  
   ::-webkit-scrollbar{ width:8px; }
   ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.15); border-radius:4px; }
 </style>
 </head>
 <body>
+
+<div class="auth-gate" id="authGate">
+  <div class="auth-card" id="authCard">
+    <h1 class="auth-title-login">Prijava admina</h1>
+    <h1 class="auth-title-register">Registracija hotela</h1>
+    <p class="auth-description-login">Prijavi se da upravljaš podacima svog hotela.</p>
+    <p class="auth-description-register">Kreiraj admin nalog i odvojenu bazu podataka svog hotela.</p>
+    <div class="auth-hotel-fields">
+      <div class="field"><label>Naziv hotela</label><input id="authHotelName" autocomplete="organization" placeholder="npr. Hotel Rafaelo"></div>
+      <div class="field"><label>Grad (opciono)</label><input id="authCity" autocomplete="address-level2" placeholder="npr. Sarajevo"></div>
+    </div>
+    <div class="field"><label>Korisničko ime</label><input id="authUsername" autocomplete="username" placeholder="npr. hotelrafaelo"></div>
+    <div class="field"><label>PIN (najmanje 6 znakova)</label><input id="authPin" type="password" autocomplete="current-password" inputmode="numeric" placeholder="Unesite PIN"></div>
+    <div class="auth-error" id="authError" role="alert"></div>
+    <button class="btn btn-primary" id="authSubmit">Prijavi se</button>
+    <div class="auth-toggle" id="authToggle">Nemaš admin nalog? Registruj hotel</div>
+  </div>
+</div>
  
 <div class="topbar">
   <div class="brand">
@@ -191,12 +229,16 @@
     </div>
     <div class="brand-name">Villa Aura<span>Admin — TV sadržaj</span></div>
   </div>
-  <div class="save-status" id="saveStatus">Spremno</div>
+  <div>
+    <span class="save-status" id="saveStatus">Spremno</span>
+    <button class="btn btn-ghost btn-small logout-btn" id="logoutBtn">Odjava</button>
+  </div>
 </div>
  
 <div class="layout">
   <div class="sidebar">
     <h3>Sistem</h3>
+    <div id="hotelHeaderNavItem"></div>
     <div id="bookingNavItem"></div>
     <div class="divider"></div>
     <h3>Pločice</h3>
@@ -230,7 +272,7 @@
  
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-import { loadModuleEntries, saveModuleEntries, loadBookings, saveBookings, sendPowerTvCommand, subscribeToCommand } from './src/lib/adminStorage.js'
+import { getAdminContext, loadHotelHeader, loadModuleEntries, saveHotelHeader, saveModuleEntries, loadBookings, saveBookings, signInAdmin, signOutAdmin, signUpAdmin, sendPowerTvCommand, subscribeToCommand } from './src/lib/adminStorage.js'
 
 const ICONS = {
   hotelinfo: '<path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/>',
@@ -251,6 +293,57 @@ const ICONS = {
  
 const BOOKINGS_LABEL = 'Rezervacije gostiju';
 const BOOKINGS_SUB = 'Ime i prezime gosta, broj sobe, datum dolaska i odlaska.';
+
+const authGate = document.getElementById('authGate');
+const authCard = document.getElementById('authCard');
+const authSubmit = document.getElementById('authSubmit');
+const authToggle = document.getElementById('authToggle');
+const authError = document.getElementById('authError');
+let isRegisterMode = false;
+
+function setAuthMode(register){
+  isRegisterMode = register;
+  authCard.classList.toggle('register', register);
+  authSubmit.textContent = register ? 'Registruj admina' : 'Prijavi se';
+  authToggle.textContent = register ? 'Već imaš admin profil? Prijavi se' : 'Nemaš admin profil? Registruj se';
+  authError.textContent = '';
+}
+
+function authMessage(error){
+  authError.textContent = error && error.message ? error.message : 'Došlo je do greške. Pokušaj ponovo.';
+}
+
+async function authenticate(){
+  authSubmit.disabled = true;
+  authError.textContent = '';
+  try{
+    const username = document.getElementById('authUsername').value.trim();
+    const pin = document.getElementById('authPin').value;
+    if(!username || !pin){ throw new Error('Korisničko ime i PIN su obavezni.'); }
+    if(pin.length < 6){ throw new Error('PIN mora imati najmanje 6 znakova.'); }
+    if(isRegisterMode){
+      const hotelName = document.getElementById('authHotelName').value.trim();
+      if(!hotelName){ throw new Error('Naziv hotela je obavezan.'); }
+      await signUpAdmin({ username, pin, hotelName, city: document.getElementById('authCity').value.trim() });
+    } else {
+      await signInAdmin(username, pin);
+    }
+    authGate.style.display = 'none';
+    await renderAll();
+  }catch(error){
+    authMessage(error);
+  }finally{
+    authSubmit.disabled = false;
+  }
+}
+
+authToggle.addEventListener('click', () => setAuthMode(!isRegisterMode));
+authSubmit.addEventListener('click', authenticate);
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await signOutAdmin();
+  authGate.style.display = 'flex';
+  setAuthMode(false);
+});
 
 if (!window.storage) {
   window.storage = {
@@ -289,6 +382,49 @@ const CATEGORIES = [
 ];
  
 let state = { current: CATEGORIES[0].id, editingId: null, pendingImage: null };
+
+async function renderHotelHeader(){
+  document.getElementById('catTitle').textContent = 'Informacije zaglavlja';
+  document.getElementById('catSub').textContent = 'Podaci koji se prikazuju u header sekciji hotelske konzole.';
+  document.getElementById('addBtn').style.display = 'none';
+  const container = document.getElementById('entryContainer');
+  container.innerHTML = '<div class="loading">Učitavanje…</div>';
+  try{
+    const hotel = await loadHotelHeader();
+    container.innerHTML = `
+      <div class="modal" style="max-width:620px; padding:0; background:transparent; border:0;">
+        <div class="field"><label>Naziv hotela</label><input id="header_name" value="${escapeAttr(hotel?.name || '')}" placeholder="npr. Hotel Rafaelo"></div>
+        <div class="field"><label>Grad</label><input id="header_city" value="${escapeAttr(hotel?.city || '')}" placeholder="npr. Sarajevo"></div>
+        <div class="field"><label>Pozdravna poruka</label><input id="header_welcome" value="${escapeAttr(hotel?.welcome_text || '')}" placeholder="Dobrodošli u naš hotel"></div>
+        <div class="field"><label>Telefon</label><input id="header_phone" value="${escapeAttr(hotel?.phone || '')}" placeholder="+387..."></div>
+        <div class="field"><label>Email</label><input id="header_email" type="email" value="${escapeAttr(hotel?.email || '')}" placeholder="info@hotel.ba"></div>
+        <button class="btn btn-primary" id="saveHeaderBtn">Sačuvaj informacije zaglavlja</button>
+      </div>`;
+    document.getElementById('saveHeaderBtn').addEventListener('click', async () => {
+      const saveButton = document.getElementById('saveHeaderBtn');
+      saveButton.disabled = true;
+      try{
+        const saved = await saveHotelHeader({
+          name: document.getElementById('header_name').value.trim(),
+          city: document.getElementById('header_city').value.trim(),
+          welcomeText: document.getElementById('header_welcome').value.trim(),
+          phone: document.getElementById('header_phone').value.trim(),
+          email: document.getElementById('header_email').value.trim(),
+        });
+        document.querySelector('.brand-name').firstChild.textContent = `${saved.name} `;
+        setStatus('Sačuvano', 'ok');
+      }catch(error){
+        setStatus('Greška pri čuvanju', 'err');
+        console.error('Failed saving hotel header', error);
+      }finally{
+        saveButton.disabled = false;
+      }
+    });
+  }catch(error){
+    container.innerHTML = '<div class="empty-state"><p>Nije moguće učitati informacije hotela.</p></div>';
+    console.error('Failed loading hotel header', error);
+  }
+}
  
 async function loadCategory(catId){
   try{
@@ -369,6 +505,14 @@ function formatDate(iso){
  
 async function renderSidebar(){
   const bookings = await loadBookings();
+  const hotelHeaderNav = document.getElementById('hotelHeaderNavItem');
+  const headerItem = document.createElement('div');
+  headerItem.className = 'nav-item' + (state.current === 'hotelHeader' ? ' active' : '');
+  headerItem.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">${ICONS.hotelinfo}</svg><span>Informacije zaglavlja</span>`;
+  headerItem.addEventListener('click', () => { state.current = 'hotelHeader'; renderAll(); });
+  hotelHeaderNav.innerHTML = '';
+  hotelHeaderNav.appendChild(headerItem);
+
   const bookingNav = document.getElementById('bookingNavItem');
   const bItem = document.createElement('div');
   bItem.className = 'nav-item' + (state.current === 'bookings' ? ' active' : '');
@@ -784,15 +928,34 @@ document.getElementById('overlay').addEventListener('click', (e) => { if(e.targe
 async function renderAll(){
   await renderSidebar();
   const addBtnLabel = document.getElementById('addBtn');
-  if(state.current === 'bookings'){
+  if(state.current === 'hotelHeader'){
+    await renderHotelHeader();
+  } else if(state.current === 'bookings'){
+    addBtnLabel.style.display = '';
     addBtnLabel.lastChild.textContent = ' Dodaj rezervaciju';
     await renderBookings();
   } else {
+    addBtnLabel.style.display = '';
     addBtnLabel.lastChild.textContent = ' Dodaj unos';
     await renderEntries();
   }
 }
-renderAll();
+async function boot(){
+  try{
+    const context = await getAdminContext();
+    if(context){
+      authGate.style.display = 'none';
+      if(context.hotel?.name){
+        document.querySelector('.brand-name').firstChild.textContent = `${context.hotel.name} `;
+      }
+      await renderAll();
+    }
+  }catch(error){
+    authMessage(error);
+  }
+}
+setAuthMode(new URLSearchParams(window.location.search).get('mode') === 'register');
+boot();
 </script>
  
 </body>
