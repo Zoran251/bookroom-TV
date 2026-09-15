@@ -13,8 +13,14 @@ function getAdminIdentity(username) {
   return `${normalizedUsername}@admins.bookroom.local`
 }
 
+function assertSupabaseConfig() {
+  if (!supabase) {
+    throw new Error('Supabase konfiguracija nije validna. Provjeri VITE_SUPABASE_URL i VITE_SUPABASE_ANON_KEY u .env datoteci.')
+  }
+}
+
 export async function signInAdmin(username, pin) {
-  if (!supabase) throw new Error('Supabase nije podešen.')
+  assertSupabaseConfig()
   const { data, error } = await supabase.auth.signInWithPassword({
     email: getAdminIdentity(username),
     password: pin,
@@ -24,7 +30,7 @@ export async function signInAdmin(username, pin) {
 }
 
 export async function signUpAdmin({ username, pin, hotelName, city }) {
-  if (!supabase) throw new Error('Supabase nije podešen.')
+  assertSupabaseConfig()
 
   const { data, error } = await supabase.auth.signUp({
     email: getAdminIdentity(username),

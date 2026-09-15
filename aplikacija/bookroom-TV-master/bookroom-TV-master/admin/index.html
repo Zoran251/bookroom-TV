@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Villa Aura — Admin panel</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+ 
+  :root{
+    --bg-room:#14100f;
+    --panel:#1d1a24;
+    --panel-2:#241f2e;
+    --tile-purple:#4b3d63;
+    --tile-purple-2:#5c4c78;
+    --text-main:#f4f1ea;
+    --text-muted:#b7aec4;
+    --text-dim:#7c7590;
+    --accent-gold:#c9a469;
+    --accent-teal:#4fb3ab;
+    --danger:#c26b6b;
+    --border:rgba(255,255,255,0.08);
+    --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Inter',sans-serif;
+    background:
+      radial-gradient(ellipse 900px 500px at 50% 0%, rgba(60,50,40,0.28), transparent 60%),
+      var(--bg-room);
+    color:var(--text-main);
+    min-height:100vh;
+  }
+ 
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px;
+    border-bottom:1px solid var(--border);
+    background:rgba(20,16,15,0.6);
+    backdrop-filter:blur(6px);
+    position:sticky; top:0; z-index:20;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{ width:28px;height:28px;color:var(--accent-gold); }
+  .brand-name{ font-family:'Fraunces',serif; font-size:17px; font-weight:500; }
+  .brand-name span{ display:block; font-size:9px; letter-spacing:0.28em; color:var(--text-muted); text-transform:uppercase; font-family:'Inter',sans-serif; margin-top:1px; }
+ 
+  .save-status{ font-size:12px; color:var(--text-dim); min-width:140px; text-align:right; }
+  .save-status.ok{ color:var(--accent-teal); }
+  .save-status.err{ color:var(--danger); }
+ 
+  .layout{ display:flex; min-height:calc(100vh - 65px); }
+ 
+  .sidebar{
+    width:230px; flex-shrink:0; border-right:1px solid var(--border);
+    padding:18px 12px; background:rgba(20,16,15,0.35);
+  }
+  .sidebar h3{
+    font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-dim);
+    padding:8px 10px 10px;
+  }
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px;
+    color:var(--text-muted); font-size:13.5px; font-weight:500; cursor:pointer; margin-bottom:2px;
+    transition:background .15s ease, color .15s ease;
+  }
+  .nav-item svg{ width:17px; height:17px; flex-shrink:0; }
+  .nav-item:hover{ background:rgba(255,255,255,0.04); color:var(--text-main); }
+  .nav-item.active{ background:var(--tile-purple); color:#fff; }
+  .nav-item .count{
+    margin-left:auto; font-size:10.5px; color:var(--text-dim); background:rgba(255,255,255,0.06);
+    padding:1px 7px; border-radius:8px;
+  }
+  .nav-item.active .count{ color:#e9e4f4; background:rgba(255,255,255,0.12); }
+ 
+  .content{ flex:1; padding:26px 32px; max-width:980px; }
+ 
+  .content-header{
+    display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px;
+  }
+  .content-title{ font-family:'Fraunces',serif; font-size:26px; font-weight:500; }
+  .content-sub{ color:var(--text-dim); font-size:13px; margin-top:4px; }
+ 
+  .btn{
+    border:none; border-radius:10px; padding:10px 18px; font-size:13.5px; font-weight:600;
+    cursor:pointer; font-family:'Inter',sans-serif; display:inline-flex; align-items:center; gap:7px;
+    transition:transform .12s ease, opacity .12s ease;
+  }
+  .btn:active{ transform:scale(0.97); }
+  .btn-primary{ background:linear-gradient(135deg,var(--accent-gold),#a97f44); color:#1d1610; }
+  .btn-ghost{ background:rgba(255,255,255,0.06); color:var(--text-main); border:1px solid var(--border); }
+  .btn-danger{ background:rgba(194,107,107,0.15); color:#e6a3a3; border:1px solid rgba(194,107,107,0.3); }
+  .btn-small{ padding:6px 12px; font-size:12px; }
+  .btn svg{ width:14px; height:14px; }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+ 
+  .entry-list{ display:flex; flex-direction:column; gap:10px; }
+  .entry-card{
+    display:flex; gap:14px; align-items:center; background:var(--panel); border:1px solid var(--border);
+    border-radius:var(--radius); padding:12px 14px;
+  }
+  .entry-thumb{
+    width:64px; height:64px; border-radius:8px; flex-shrink:0; background-size:cover; background-position:center;
+    background-color:var(--tile-purple); display:flex; align-items:center; justify-content:center; color:var(--text-dim);
+  }
+  .entry-thumb svg{ width:22px; height:22px; }
+  .entry-body{ flex:1; min-width:0; }
+  .entry-title{ font-weight:600; font-size:14.5px; }
+  .entry-sub{ font-size:12.5px; color:var(--accent-gold); margin-top:1px; }
+  .entry-desc{ font-size:12.5px; color:var(--text-dim); margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .entry-actions{ display:flex; gap:6px; flex-shrink:0; }
+ 
+  .empty-state{
+    text-align:center; padding:60px 20px; color:var(--text-dim); border:1px dashed var(--border); border-radius:var(--radius);
+  }
+  .empty-state svg{ width:34px; height:34px; margin-bottom:10px; opacity:0.6; }
+  .empty-state p{ font-size:13.5px; margin-bottom:14px; }
+ 
+  .loading{ text-align:center; padding:50px; color:var(--text-dim); font-size:13px; }
+ 
+  .overlay{
+    position:fixed; inset:0; background:rgba(10,8,10,0.65); backdrop-filter:blur(3px);
+    display:none; align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .overlay.open{ display:flex; }
+  .modal{
+    background:var(--panel-2); border:1px solid var(--border); border-radius:16px; width:100%; max-width:520px;
+    padding:26px; max-height:90vh; overflow-y:auto;
+  }
+  .modal h2{ font-family:'Fraunces',serif; font-size:20px; font-weight:500; margin-bottom:18px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px; font-weight:600; }
+  .field input, .field textarea{
+    width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:8px;
+    padding:10px 12px; color:var(--text-main); font-family:'Inter',sans-serif; font-size:13.5px;
+  }
+  .field input:focus, .field textarea:focus{ outline:none; border-color:var(--accent-gold); }
+  .field textarea{ resize:vertical; min-height:70px; }
+  .field-hint{ font-size:11px; color:var(--text-dim); margin-top:4px; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+ 
+  .image-drop{
+    border:1.5px dashed var(--border); border-radius:10px; padding:16px; text-align:center;
+    cursor:pointer; transition:border-color .15s ease, background .15s ease; position:relative;
+  }
+  .image-drop:hover{ border-color:var(--accent-gold); background:rgba(201,164,105,0.05); }
+  .image-drop input[type=file]{
+    position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
+  }
+  .image-drop .drop-icon{ width:22px; height:22px; color:var(--text-dim); margin:0 auto 8px; }
+  .image-drop .drop-text{ font-size:12.5px; color:var(--text-muted); }
+  .image-drop .drop-text b{ color:var(--accent-gold); }
+ 
+  .image-preview-wrap{ display:flex; align-items:center; gap:12px; }
+  .image-preview{
+    width:80px; height:80px; border-radius:10px; background-size:cover; background-position:center;
+    background-color:var(--tile-purple); flex-shrink:0; border:1px solid var(--border);
+  }
+  .image-preview-info{ flex:1; font-size:12.5px; color:var(--text-muted); }
+  .image-preview-info .fname{ color:var(--text-main); font-weight:600; margin-bottom:2px; word-break:break-all; }
+ 
+  /* Bookings */
+  .sidebar .divider{ height:1px; background:var(--border); margin:14px 6px; }
+  .booking-card{ display:flex; gap:14px; align-items:center; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; }
+  .booking-room{
+    width:56px; height:56px; border-radius:10px; flex-shrink:0; background:linear-gradient(160deg,var(--tile-purple),var(--tile-purple-2));
+    display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-size:15px; font-weight:600;
+  }
+  .booking-body{ flex:1; min-width:0; }
+  .booking-name{ font-weight:600; font-size:14.5px; }
+  .booking-dates{ font-size:12.5px; color:var(--text-dim); margin-top:2px; }
+  .badge{ font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; letter-spacing:0.03em; text-transform:uppercase; white-space:nowrap; }
+  .badge-active{ background:rgba(79,179,171,0.18); color:var(--accent-teal); }
+  .badge-upcoming{ background:rgba(201,164,105,0.18); color:var(--accent-gold); }
+  .badge-past{ background:rgba(255,255,255,0.06); color:var(--text-dim); }
+  .field-row{ display:flex; gap:12px; }
+  .field-row .field{ flex:1; }
+  .field input[type="date"]{ color-scheme:dark; }
+ 
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.15); border-radius:4px; }
+</style>
+</head>
+<body>
+ 
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2 C9 6 6 8 6 12 a6 6 0 0 0 12 0 c0-4-3-6-6-10Z"/></svg>
+    </div>
+    <div class="brand-name">Villa Aura<span>Admin — TV sadržaj</span></div>
+  </div>
+  <div class="save-status" id="saveStatus">Spremno</div>
+</div>
+ 
+<div class="layout">
+  <div class="sidebar">
+    <h3>Sistem</h3>
+    <div id="bookingNavItem"></div>
+    <div class="divider"></div>
+    <h3>Pločice</h3>
+    <div id="navList"></div>
+  </div>
+  <div class="content">
+    <div class="content-header">
+      <div>
+        <div class="content-title" id="catTitle">—</div>
+        <div class="content-sub" id="catSub"></div>
+      </div>
+      <button class="btn btn-primary" id="addBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Dodaj unos
+      </button>
+    </div>
+    <div id="entryContainer"><div class="loading">Učitavanje…</div></div>
+  </div>
+</div>
+ 
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">Novi unos</h2>
+    <div id="formFields"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancelBtn">Otkaži</button>
+      <button class="btn btn-primary" id="saveBtn">Sačuvaj</button>
+    </div>
+  </div>
+</div>
+ 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+import { loadModuleEntries, saveModuleEntries, loadBookings, saveBookings, sendPowerTvCommand, subscribeToCommand } from './src/lib/adminStorage.js'
+
+const ICONS = {
+  hotelinfo: '<path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/>',
+  restorani: '<path d="M6 2v8a2 2 0 0 0 2 2v10M6 2v8M9 2v8M18 2v20M18 2a4 4 0 0 0-4 4v4h4"/>',
+  wellness: '<path d="M12 2 C9 6 6 8 6 12 a6 6 0 0 0 12 0 c0-4-3-6-6-10Z"/>',
+  sport: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/>',
+  okolica: '<path d="M3 12l9-9 9 9M5 10v10h14V10"/>',
+  poruke: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  budjenje: '<circle cx="12" cy="13" r="7"/><path d="M12 9v4l2.5 1.5M8 2 4 5M16 2l4 3"/>',
+  servis: '<path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="2.3"/>',
+  narudzbe: '<path d="M6 3h9l3 3v15H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  tv: '<rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/>',
+  radio: '<rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="8" cy="14" r="2.2"/><path d="M13 12h5M13 16h3M7 8l7-4"/>',
+  sobaposluga: '<path d="M4 18h16M6 18a6 6 0 0 1 12 0M12 4v2M12 6a4 4 0 0 1 4 4H8a4 4 0 0 1 4-4Z"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
+  bookings: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h2M14 14h2M8 17h2M14 17h2"/>'
+};
+ 
+const BOOKINGS_LABEL = 'Rezervacije gostiju';
+const BOOKINGS_SUB = 'Ime i prezime gosta, broj sobe, datum dolaska i odlaska.';
+
+if (!window.storage) {
+  window.storage = {
+    async get(key) {
+      try {
+        const value = localStorage.getItem(key);
+        return value === null ? { value: null } : { value };
+      } catch (error) {
+        return { value: null };
+      }
+    },
+    async set(key, value) {
+      try {
+        localStorage.setItem(key, value);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+  };
+}
+ 
+const CATEGORIES = [
+  { id:'hotelinfo',  label:'Hotelske informacije',    type:'rich',   sub:'Opšte informacije o hotelu (radno vrijeme, sadržaji, pravila).' },
+  { id:'restorani',  label:'Restorani i barovi',       type:'rich',   sub:'Svaki restoran/bar kao zaseban unos sa opisom i slikom.' },
+  { id:'wellness',   label:'Wellness & beauty centri',  type:'rich',   sub:'Spa i beauty ponuda, tretmani, radno vrijeme.' },
+  { id:'sport',      label:'Sportske aktivnosti',       type:'rich',   sub:'Aktivnosti, tereni, oprema za iznajmljivanje.' },
+  { id:'okolica',    label:'Zanimljivosti u okolici',   type:'rich',   sub:'Izleti, znamenitosti i preporuke u blizini.' },
+  { id:'poruke',     label:'Poruke',                    type:'rich',   sub:'Obavještenja i poruke koje gost vidi na TV-u.' },
+  { id:'servis',     label:'Hotelski servis',           type:'rich',   sub:'Usluge koje gost može zatražiti (masaža, čišćenje, itd).' },
+  { id:'narudzbe',   label:'Moje narudžbe',             type:'rich',   sub:'Predlošci ili stavke koje se prikazuju kao dostupne narudžbe.' },
+  { id:'sobaposluga',label:'Posluga u sobu',            type:'rich',   sub:'Jelovnik za posluživanje u sobu — jela i pića.' },
+  { id:'tv',         label:'TV kanali',                 type:'simple', sub:'Lista kanala i njihovih brojeva.', nameLabel:'Naziv kanala', valueLabel:'Broj kanala' },
+  { id:'radio',      label:'Radio stanice',             type:'simple', sub:'Lista radio stanica i frekvencija.', nameLabel:'Naziv stanice', valueLabel:'Frekvencija' },
+  { id:'budjenje',   label:'Buđenje',                   type:'simple', sub:'Ponuđene opcije vremena za buđenje.', nameLabel:'Opis', valueLabel:'Vrijeme' },
+];
+ 
+let state = { current: CATEGORIES[0].id, editingId: null, pendingImage: null };
+ 
+async function loadCategory(catId){
+  try{
+    return await loadModuleEntries(catId);
+  }catch(e){
+    console.error('Failed loading category', catId, e);
+    return [];
+  }
+}
+async function saveCategory(catId, entries){
+  setStatus('Čuvanje…', '');
+  try{
+    await saveModuleEntries(catId, entries);
+    setStatus('Sačuvano', 'ok');
+    setTimeout(() => setStatus('Spremno', ''), 1500);
+  }catch(e){
+    console.error('Failed saving category', catId, e);
+    setStatus('Greška pri čuvanju', 'err');
+  }
+}
+// Android TV aplikacija — konfiguracija iz localStorage (štita se pod key 'tile:androidApp')
+async function loadAndroidApp(){
+  try{
+    const res = await window.storage.get('tile:androidApp', true);
+    return res && res.value ? JSON.parse(res.value) : {package:'power.bestapps.uk', name:'POWER TV', apkUrl:'power-tv.apk', schema:'android_app'};
+  }catch(e){ console.error(e); return {package:'power.bestapps.uk', name:'POWER TV', apkUrl:'power-tv.apk', schema:'android_app'}; }
+}
+async function saveAndroidApp(app){
+  setStatus('Čuvanje Android aplikacije…', '');
+  try{
+    await window.storage.set('tile:androidApp', JSON.stringify(app), true);
+    setStatus('Sačuvano', 'ok');
+    setTimeout(()=> setStatus('Spremno',''), 1500);
+  }catch(e){
+    setStatus('Greška', 'err');
+  }
+}
+function setStatus(text, cls){
+  const el = document.getElementById('saveStatus');
+  el.textContent = text;
+  el.className = 'save-status' + (cls ? ' ' + cls : '');
+}
+ 
+/* ---------------- Bookings storage ---------------- */
+async function loadBookingList(){
+  try{
+    return await loadBookings();
+  }catch(e){
+    console.error('Failed loading bookings', e);
+    return [];
+  }
+}
+async function saveBookingList(entries){
+  setStatus('Čuvanje…', '');
+  try{
+    await saveBookings(entries);
+    setStatus('Sačuvano', 'ok');
+    setTimeout(()=> setStatus('Spremno',''), 1500);
+  }catch(e){
+    console.error('Failed saving bookings', e);
+    setStatus('Greška pri čuvanju', 'err');
+  }
+}
+function todayStr(){
+  return new Date().toISOString().slice(0,10);
+}
+function bookingStatus(b){
+  const t = todayStr();
+  if(b.checkIn > t) return 'upcoming';
+  if(b.checkOut < t) return 'past';
+  return 'active';
+}
+function formatDate(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}.${m}.${y}.`;
+}
+ 
+async function renderSidebar(){
+  const bookings = await loadBookings();
+  const bookingNav = document.getElementById('bookingNavItem');
+  const bItem = document.createElement('div');
+  bItem.className = 'nav-item' + (state.current === 'bookings' ? ' active' : '');
+  bItem.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">${ICONS.bookings}</svg>
+    <span>${BOOKINGS_LABEL}</span><span class="count">${bookings.length}</span>`;
+  bItem.addEventListener('click', () => { state.current = 'bookings'; renderAll(); });
+  bookingNav.innerHTML = '';
+  bookingNav.appendChild(bItem);
+ 
+  const nav = document.getElementById('navList');
+  nav.innerHTML = '';
+  for(const cat of CATEGORIES){
+    const entries = await loadCategory(cat.id);
+    const item = document.createElement('div');
+    item.className = 'nav-item' + (cat.id === state.current ? ' active' : '');
+    item.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">${ICONS[cat.id]}</svg>
+      <span>${cat.label}</span><span class="count">${entries.length}</span>`;
+    item.addEventListener('click', () => { state.current = cat.id; renderAll(); });
+    nav.appendChild(item);
+  }
+}
+ 
+async function renderEntries(){
+  const cat = CATEGORIES.find(c => c.id === state.current);
+  document.getElementById('catTitle').textContent = cat.label;
+  document.getElementById('catSub').textContent = cat.sub;
+ 
+  const container = document.getElementById('entryContainer');
+  container.innerHTML = '<div class="loading">Učitavanje…</div>';
+  const entries = await loadCategory(cat.id);
+ 
+  if(entries.length === 0){
+    container.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/></svg>
+      <p>Još nema unosa za "${cat.label}"</p>
+    </div>`;
+    return;
+  }
+ 
+  container.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'entry-list';
+ 
+  entries.forEach((entry) => {
+    const card = document.createElement('div');
+    card.className = 'entry-card';
+ 
+    if(cat.type === 'rich'){
+      const thumbStyle = entry.image ? `style="background-image:url('${entry.image}')"` : '';
+      card.innerHTML = `
+        <div class="entry-thumb" ${thumbStyle}>${entry.image ? '' : icon('image')}</div>
+        <div class="entry-body">
+          <div class="entry-title">${escapeHtml(entry.title || '(bez naslova)')}</div>
+          ${entry.subtitle ? `<div class="entry-sub">${escapeHtml(entry.subtitle)}</div>` : ''}
+          ${entry.description ? `<div class="entry-desc">${escapeHtml(entry.description)}</div>` : ''}
+        </div>
+        <div class="entry-actions">
+          <button class="btn btn-ghost btn-small" data-action="edit" data-id="${entry.id}">Uredi</button>
+          <button class="btn btn-danger btn-small" data-action="delete" data-id="${entry.id}">Obriši</button>
+        </div>`;
+    } else {
+      card.innerHTML = `
+        <div class="entry-thumb">${icon(cat.id)}</div>
+        <div class="entry-body">
+          <div class="entry-title">${escapeHtml(entry.name || '(bez naziva)')}</div>
+          <div class="entry-sub">${escapeHtml(entry.value || '')}</div>
+        </div>
+        <div class="entry-actions">
+          <button class="btn btn-ghost btn-small" data-action="edit" data-id="${entry.id}">Uredi</button>
+          <button class="btn btn-danger btn-small" data-action="delete" data-id="${entry.id}">Obriši</button>
+        </div>`;
+    }
+    list.appendChild(card);
+  });
+ 
+  container.appendChild(list);
+ 
+  list.querySelectorAll('[data-action="edit"]').forEach(btn=>{
+    btn.addEventListener('click', () => openModal(cat, btn.dataset.id));
+  });
+  list.querySelectorAll('[data-action="delete"]').forEach(btn=>{
+    btn.addEventListener('click', () => deleteEntry(cat, btn.dataset.id));
+  });
+}
+ 
+async function renderBookings(){
+  document.getElementById('catTitle').textContent = BOOKINGS_LABEL;
+  document.getElementById('catSub').textContent = BOOKINGS_SUB;
+ 
+  const container = document.getElementById('entryContainer');
+  container.innerHTML = '<div class="loading">Učitavanje…</div>';
+  const bookings = await loadBookings();
+ 
+  if(bookings.length === 0){
+    container.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">${ICONS.bookings}</svg>
+      <p>Još nema unesenih rezervacija</p>
+    </div>`;
+    return;
+  }
+ 
+  const sorted = [...bookings].sort((a,b) => a.checkIn.localeCompare(b.checkIn));
+  const badgeInfo = { active:['badge-active','U hotelu'], upcoming:['badge-upcoming','Stiže'], past:['badge-past','Odjavljen/a'] };
+ 
+  container.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'entry-list';
+ 
+  sorted.forEach((b) => {
+    const [cls, label] = badgeInfo[bookingStatus(b)];
+    const card = document.createElement('div');
+    card.className = 'booking-card';
+    card.innerHTML = `
+      <div class="booking-room">${escapeHtml(b.room || '—')}</div>
+      <div class="booking-body">
+        <div class="booking-name">${escapeHtml(b.guestName || '(bez imena)')}</div>
+        <div class="booking-dates">${formatDate(b.checkIn)} — ${formatDate(b.checkOut)}</div>
+      </div>
+      <span class="badge ${cls}">${label}</span>
+      <div class="entry-actions">
+        <button class="btn btn-ghost btn-small" data-action="power-tv" data-room="${escapeAttr(b.room || '')}">TV</button>
+        <button class="btn btn-ghost btn-small" data-action="edit" data-id="${b.id}">Uredi</button>
+        <button class="btn btn-danger btn-small" data-action="delete" data-id="${b.id}">Obriši</button>
+      </div>`;
+    list.appendChild(card);
+  });
+ 
+  container.appendChild(list);
+ 
+  list.querySelectorAll('[data-action="edit"]').forEach(btn=>{
+    btn.addEventListener('click', () => openBookingModal(btn.dataset.id));
+  });
+  list.querySelectorAll('[data-action="delete"]').forEach(btn=>{
+    btn.addEventListener('click', () => deleteBooking(btn.dataset.id));
+  });
+  list.querySelectorAll('[data-action="power-tv"]').forEach(btn=>{
+    btn.addEventListener('click', () => openPowerTv(btn));
+  });
+}
+
+async function openPowerTv(button){
+  const room = button.dataset.room;
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Pokretanje…';
+  setStatus('Pokretanje TV-a…', '');
+  let unsubscribe = () => {};
+  try {
+    const command = await sendPowerTvCommand(room);
+    unsubscribe = await subscribeToCommand(command.id, (updated) => {
+      if (updated.status === 'completed') {
+        setStatus('Power TV pokrenut', 'ok');
+        button.textContent = 'Pokrenut';
+        unsubscribe();
+      } else if (updated.status === 'failed') {
+        setStatus(updated.error_message || 'Power TV nije pokrenut', 'err');
+        button.textContent = originalText;
+        button.disabled = false;
+        unsubscribe();
+      }
+    });
+    setStatus('Komanda poslata TV uređaju', 'ok');
+    button.textContent = 'Poslato';
+    setTimeout(() => {
+      button.disabled = false;
+      button.textContent = originalText;
+    }, 10000);
+  } catch (error) {
+    setStatus(error.message || 'Power TV nije pokrenut', 'err');
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+ 
+function icon(name){
+  const path = ICONS[name] || '<circle cx="12" cy="12" r="9"/>';
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${path}</svg>`;
+}
+ 
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+function escapeAttr(s){ return String(s).replace(/'/g, "%27"); }
+ 
+function fileToDataUrl(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+ 
+// Downscale large images so they fit comfortably under the 5MB storage limit
+function compressImage(dataUrl, maxDim = 1000, quality = 0.82){
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if(width > maxDim || height > maxDim){
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+ 
+async function handleImageInput(inputEl, previewWrapEl){
+  const file = inputEl.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){
+    alert('Molimo odaberi fajl slike (jpg, png, webp...).');
+    return;
+  }
+  previewWrapEl.innerHTML = `<div class="loading" style="padding:14px;">Obrada slike…</div>`;
+  try{
+    const rawDataUrl = await fileToDataUrl(file);
+    const compressed = await compressImage(rawDataUrl);
+    state.pendingImage = compressed;
+    renderImagePreview(previewWrapEl, compressed, file.name);
+  }catch(e){
+    previewWrapEl.innerHTML = `<div class="field-hint">Greška pri učitavanju slike, pokušaj ponovo.</div>`;
+  }
+}
+ 
+function renderImagePreview(wrapEl, dataUrl, fileName){
+  const sizeKb = Math.round((dataUrl.length * 0.75) / 1024);
+  wrapEl.innerHTML = `
+    <div class="image-preview-wrap">
+      <div class="image-preview" style="background-image:url('${dataUrl}')"></div>
+      <div class="image-preview-info">
+        <div class="fname">${escapeHtml(fileName || 'slika')}</div>
+        <div>~${sizeKb} KB nakon optimizacije</div>
+      </div>
+      <button type="button" class="btn btn-ghost btn-small" id="removeImageBtn">Ukloni</button>
+    </div>`;
+  document.getElementById('removeImageBtn').addEventListener('click', () => {
+    state.pendingImage = null;
+    renderImageDrop(wrapEl);
+  });
+}
+ 
+function renderImageDrop(wrapEl){
+  wrapEl.innerHTML = `
+    <div class="image-drop">
+      <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${ICONS.image}</svg>
+      <div class="drop-text"><b>Klikni za odabir slike</b><br>JPG, PNG ili WEBP</div>
+      <input type="file" id="f_imageFile" accept="image/*">
+    </div>`;
+  document.getElementById('f_imageFile').addEventListener('change', (e) => handleImageInput(e.target, wrapEl));
+}
+ 
+async function openModal(cat, entryId){
+  state.editingId = entryId || null;
+  state.pendingImage = null;
+  document.getElementById('modalTitle').textContent = entryId ? 'Uredi unos' : 'Novi unos';
+  const fields = document.getElementById('formFields');
+ 
+  let entry = { id: null, title:'', subtitle:'', description:'', image:'', name:'', value:'' };
+  if(entryId){
+    const entries = await loadCategory(cat.id);
+    entry = entries.find(e => e.id === entryId) || entry;
+  }
+  state.pendingImage = entry.image || null;
+ 
+  if(cat.type === 'rich'){
+    fields.innerHTML = `
+      <div class="field"><label>Naslov</label><input id="f_title" value="${escapeAttr(entry.title||'')}" placeholder="npr. Restoran Panorama"></div>
+      <div class="field"><label>Podnaslov (opciono)</label><input id="f_subtitle" value="${escapeAttr(entry.subtitle||'')}" placeholder="npr. Otvoreno 07:00–22:00"></div>
+      <div class="field"><label>Opis</label><textarea id="f_description" placeholder="Kratak opis koji vidi gost...">${entry.description||''}</textarea></div>
+      <div class="field">
+        <label>Slika</label>
+        <div id="imageFieldWrap"></div>
+      </div>`;
+    const wrap = document.getElementById('imageFieldWrap');
+    if(entry.image){ renderImagePreview(wrap, entry.image, 'trenutna slika'); }
+    else { renderImageDrop(wrap); }
+  } else {
+    fields.innerHTML = `
+      <div class="field"><label>${cat.nameLabel}</label><input id="f_name" value="${escapeAttr(entry.name||'')}" placeholder="npr. ${cat.id==='tv'?'RTS 1':cat.id==='radio'?'Radio Sarajevo':'07:00'}"></div>
+      <div class="field"><label>${cat.valueLabel}</label><input id="f_value" value="${escapeAttr(entry.value||'')}" placeholder="npr. ${cat.id==='tv'?'1':cat.id==='radio'?'92.4 MHz':'Standardno buđenje'}"></div>`;
+  }
+ 
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('saveBtn').onclick = () => saveEntry(cat);
+}
+ 
+function closeModal(){
+  document.getElementById('overlay').classList.remove('open');
+  state.editingId = null;
+  state.pendingImage = null;
+}
+ 
+async function saveEntry(cat){
+  const entries = await loadCategory(cat.id);
+  let entry;
+ 
+  if(cat.type === 'rich'){
+    const title = document.getElementById('f_title').value.trim();
+    if(!title){ alert('Naslov je obavezan.'); return; }
+    entry = {
+      id: state.editingId || 'e_' + Date.now(),
+      title,
+      subtitle: document.getElementById('f_subtitle').value.trim(),
+      description: document.getElementById('f_description').value.trim(),
+      image: state.pendingImage || '',
+    };
+  } else {
+    const name = document.getElementById('f_name').value.trim();
+    if(!name){ alert('Ovo polje je obavezno.'); return; }
+    entry = {
+      id: state.editingId || 'e_' + Date.now(),
+      name,
+      value: document.getElementById('f_value').value.trim(),
+    };
+  }
+ 
+  const idx = entries.findIndex(e => e.id === entry.id);
+  if(idx >= 0) entries[idx] = entry; else entries.push(entry);
+ 
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  await saveCategory(cat.id, entries);
+  saveBtn.disabled = false;
+  closeModal();
+  renderAll();
+}
+ 
+async function deleteEntry(cat, entryId){
+  if(!confirm('Obrisati ovaj unos?')) return;
+  const entries = await loadCategory(cat.id);
+  const filtered = entries.filter(e => e.id !== entryId);
+  await saveCategory(cat.id, filtered);
+  renderAll();
+}
+ 
+/* ---------------- Booking modal ---------------- */
+async function openBookingModal(bookingId){
+  state.editingId = bookingId || null;
+  document.getElementById('modalTitle').textContent = bookingId ? 'Uredi rezervaciju' : 'Nova rezervacija';
+  const fields = document.getElementById('formFields');
+ 
+  let b = { id:null, guestName:'', room:'', checkIn:'', checkOut:'' };
+  if(bookingId){
+    const bookings = await loadBookingList();
+    b = bookings.find(x => x.id === bookingId) || b;
+  }
+ 
+  fields.innerHTML = `
+    <div class="field"><label>Ime i prezime gosta</label><input id="b_name" value="${escapeAttr(b.guestName||'')}" placeholder="npr. Gospođa Jozić"></div>
+    <div class="field"><label>Broj sobe</label><input id="b_room" value="${escapeAttr(b.room||'')}" placeholder="npr. 6335"></div>
+    <div class="field-row">
+      <div class="field"><label>Datum dolaska</label><input id="b_checkin" type="date" value="${b.checkIn||''}"></div>
+      <div class="field"><label>Datum odlaska</label><input id="b_checkout" type="date" value="${b.checkOut||''}"></div>
+    </div>`;
+ 
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('saveBtn').onclick = () => saveBooking();
+}
+ 
+async function saveBooking(){
+  const guestName = document.getElementById('b_name').value.trim();
+  const room = document.getElementById('b_room').value.trim();
+  const checkIn = document.getElementById('b_checkin').value;
+  const checkOut = document.getElementById('b_checkout').value;
+ 
+  if(!guestName || !room){ alert('Ime gosta i broj sobe su obavezni.'); return; }
+  if(!checkIn || !checkOut){ alert('Unesi oba datuma.'); return; }
+  if(checkOut <= checkIn){ alert('Datum odlaska mora biti nakon datuma dolaska.'); return; }
+ 
+  const bookings = await loadBookingList();
+  const entry = { id: state.editingId || 'b_' + Date.now(), guestName, room, checkIn, checkOut };
+  const idx = bookings.findIndex(x => x.id === entry.id);
+  if(idx >= 0) bookings[idx] = entry; else bookings.push(entry);
+ 
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  await saveBookingList(bookings);
+  saveBtn.disabled = false;
+  closeModal();
+  renderAll();
+}
+ 
+async function deleteBooking(bookingId){
+  if(!confirm('Obrisati ovu rezervaciju?')) return;
+  const bookings = await loadBookingList();
+  const filtered = bookings.filter(x => x.id !== bookingId);
+  await saveBookingList(filtered);
+  renderAll();
+}
+ 
+document.getElementById('addBtn').addEventListener('click', () => {
+  if(state.current === 'bookings'){
+    openBookingModal(null);
+  } else {
+    const cat = CATEGORIES.find(c => c.id === state.current);
+    openModal(cat, null);
+  }
+});
+document.getElementById('cancelBtn').addEventListener('click', closeModal);
+document.getElementById('overlay').addEventListener('click', (e) => { if(e.target.id === 'overlay') closeModal(); });
+ 
+async function renderAll(){
+  await renderSidebar();
+  const addBtnLabel = document.getElementById('addBtn');
+  if(state.current === 'bookings'){
+    addBtnLabel.lastChild.textContent = ' Dodaj rezervaciju';
+    await renderBookings();
+  } else {
+    addBtnLabel.lastChild.textContent = ' Dodaj unos';
+    await renderEntries();
+  }
+}
+renderAll();
+</script>
+ 
+</body>
+</html>

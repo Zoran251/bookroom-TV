@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hotel TV — Informacije</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap');
+    :root {
+      --bg-room: #14100f;
+      --panel-bg: #1d1a24;
+      --panel-bg-2: #241f2e;
+      --text-main: #f4f1ea;
+      --text-muted: #b7aec4;
+      --text-dim: #7c7590;
+      --accent-gold: #c9a469;
+      --accent-teal: #4fb3ab;
+      --tile-purple: #4b3d63;
+      --tile-purple-2: #5c4c78;
+      --radius: 18px;
+      --radius-sm: 12px;
+      --border: rgba(255,255,255,0.08);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(ellipse 1100px 600px at 50% 0%, rgba(60,50,40,0.35), transparent 60%), var(--bg-room);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* Topbar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(20,16,15,0.72);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--tile-purple), var(--tile-purple-2));
+      color: var(--accent-gold);
+    }
+    .brand-mark svg { width: 18px; height: 18px; }
+    .brand-text { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 500; }
+    .brand-text span { display: block; font-family: 'Inter', sans-serif; font-size: 9px; letter-spacing: 0.24em; color: var(--text-muted); text-transform: uppercase; margin-top: 1px; font-weight: 600; }
+
+    .back-btn {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-main);
+      padding: 10px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(201,164,105,0.3); }
+
+    /* Page container */
+    .page-wrap {
+      width: min(1060px, 100%);
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    /* Hero – landing feel */
+    .hero {
+      background: linear-gradient(180deg, rgba(29,26,36,0.92), rgba(36,31,46,0.92));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px 32px 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 85% 20%, rgba(201,164,105,0.14), transparent 42%);
+      pointer-events: none;
+    }
+    .hero > * { position: relative; }
+    .eyebrow {
+      color: var(--accent-gold);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .eyebrow::after {
+      content: "";
+      height: 1px;
+      flex: 0 0 42px;
+      background: rgba(201,164,105,0.35);
+    }
+    .hero h1 {
+      margin: 0 0 10px;
+      font-family: 'Fraunces', serif;
+      font-size: clamp(1.9rem, 4vw, 2.8rem);
+      font-weight: 600;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+    .hero .subtitle {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.6;
+      max-width: 720px;
+    }
+    .hero-meta {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .count-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(201,164,105,0.12);
+      border: 1px solid rgba(201,164,105,0.28);
+      color: var(--accent-gold);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .count-badge svg { width: 14px; height: 14px; }
+
+    /* Entries grid – each post separated */
+    .entries-grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .entry-article {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      background: linear-gradient(180deg, var(--panel-bg), var(--panel-bg-2));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      transition: transform .18s ease, border-color .18s ease;
+    }
+    .entry-article:hover {
+      transform: translateY(-2px);
+      border-color: rgba(201,164,105,0.22);
+    }
+
+    .entry-media {
+      position: relative;
+      background: linear-gradient(160deg, var(--tile-purple), var(--tile-purple-2));
+      min-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .entry-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      min-height: 240px;
+    }
+    .entry-media.placeholder {
+      color: var(--text-dim);
+    }
+    .entry-media.placeholder svg { width: 42px; height: 42px; opacity: 0.5; }
+    .entry-media.has-image::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 55%, rgba(10,8,14,0.45) 100%);
+      pointer-events: none;
+    }
+
+    .entry-body {
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .entry-kicker {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+      font-weight: 700;
+    }
+    .entry-body h3 {
+      margin: 0;
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--text-main);
+    }
+    .entry-sub {
+      margin: 0;
+      color: var(--accent-gold);
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .entry-desc {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 13.5px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+    .entry-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 6px 0 2px;
+    }
+    .entry-index {
+      margin-top: auto;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+    }
+
+    /* Simple list (TV, radio, budjenje) */
+    .simple-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .simple-card {
+      background: linear-gradient(180deg, var(--panel-bg), var(--panel-bg-2));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 18px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+    .simple-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--tile-purple), var(--tile-purple-2));
+      display: grid;
+      place-items: center;
+      color: var(--text-muted);
+    }
+    .simple-icon svg { width: 20px; height: 20px; }
+    .simple-body { flex: 1; min-width: 0; }
+    .simple-name { font-weight: 700; font-size: 14px; color: var(--text-main); }
+    .simple-value { font-size: 13px; color: var(--accent-gold); margin-top: 2px; font-weight: 600; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      background: linear-gradient(180deg, var(--panel-bg), var(--panel-bg-2));
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+    }
+    .empty-state svg { width: 36px; height: 36px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-state p { margin: 0 0 6px; font-size: 14px; color: var(--text-muted); }
+    .empty-state small { font-size: 12px; }
+
+    @media (max-width: 860px) {
+      .entry-article { grid-template-columns: 1fr; }
+      .entry-media { min-height: 200px; }
+      .entry-media img { min-height: 200px; max-height: 320px; }
+    }
+    @media (max-width: 640px) {
+      .topbar { padding: 14px 16px; }
+      .page-wrap { padding: 20px 14px 32px; }
+      .hero { padding: 22px 18px; border-radius: 18px; }
+      .entry-body { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2 C9 6 6 8 6 12 a6 6 0 0 0 12 0 c0-4-3-6-6-10Z"/></svg>
+      </div>
+      <div class="brand-text">Villa Aura <span>Hotel & Spa — TV</span></div>
+    </div>
+    <button class="back-btn" type="button" onclick="history.length > 1 ? history.back() : window.location.href='hotel-tv-panel.html'">← Nazad na TV</button>
+  </header>
+
+  <div class="page-wrap">
+    <!-- Hero -->
+    <section class="hero" id="hero">
+      <div class="eyebrow" id="eyebrow">Hotel TV</div>
+      <h1 id="title">Učitavanje…</h1>
+      <p class="subtitle" id="subtitle">Učitavanje detalja…</p>
+      <div class="hero-meta" id="heroMeta"></div>
+    </section>
+
+    <!-- Rich entries -->
+    <div class="entries-grid" id="entriesGrid"></div>
+
+    <!-- Simple entries -->
+    <div class="simple-grid" id="simpleGrid" style="display:none;"></div>
+
+    <!-- Empty -->
+    <div id="emptyState" style="display:none;"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import { loadModuleEntries } from './admin/src/lib/adminStorage.js'
+
+    const CATEGORY_META = {
+      'hotel':         { label: 'Hotelske informacije', sub: 'Sve što trebate znati o boravku u Villa Aura.' },
+      'restaurant':    { label: 'Restorani i barovi', sub: 'Gastronomska ponuda hotela — restorani, barovi i radno vrijeme.' },
+      'wellness':      { label: 'Wellness & beauty centri', sub: 'Spa, masaže i beauty tretmani za potpuni odmor.' },
+      'sport':         { label: 'Sportske aktivnosti', sub: 'Sport, rekreacija i aktivnosti u hotelu i okolini.' },
+      'nearby':        { label: 'Zanimljivosti uokolici', sub: 'Izleti i preporuke u blizini hotela.' },
+      'messages':      { label: 'Poruke', sub: 'Obavještenja i važne poruke za goste.' },
+      'wake':          { label: 'Buđenje', sub: 'Dostupne opcije za uslugu buđenja.' },
+      'hotel-service': { label: 'Hotelski servis', sub: 'Usluge koje mogu zatražiti u bilo kojem trenutku.' },
+      'orders':        { label: 'Moje narudžbe', sub: 'Vaše narudžbe i dostupne stavke.' },
+      'room-service':  { label: 'Posluga u sobu', sub: 'Jelovnik i ponuda za posluživanje u sobu.' },
+      'tv':            { label: 'TV kanali', sub: 'Lista dostupnih TV kanala u sobi.' },
+      'radio':         { label: 'Radio stanice', sub: 'Radio stanice dostupne u hotelu.' },
+    };
+
+    const SIMPLE_KEYS = new Set(['tv','radio','wake']);
+
+    const ICONS = {
+      hotel: '<path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/>',
+      restaurant: '<path d="M6 2v8a2 2 0 0 0 2 2v10M6 2v8M9 2v8M18 2v20M18 2a4 4 0 0 0-4 4v4h4"/>',
+      wellness: '<path d="M12 2 C9 6 6 8 6 12 a6 6 0 0 0 12 0 c0-4-3-6-6-10Z"/>',
+      sport: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/>',
+      nearby: '<path d="M3 12l9-9 9 9M5 10v10h14V10"/>',
+      messages: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+      wake: '<circle cx="12" cy="13" r="7"/><path d="M12 9v4l2.5 1.5M8 2 4 5M16 2l4 3"/>',
+      'hotel-service': '<path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="2.3"/>',
+      orders: '<path d="M6 3h9l3 3v15H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+      'room-service': '<path d="M4 18h16M6 18a6 6 0 0 1 12 0M12 4v2M12 6a4 4 0 0 1 4 4H8a4 4 0 0 1 4 4Z"/>',
+      tv: '<rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/>',
+      radio: '<rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="8" cy="14" r="2.2"/><path d="M13 12h5M13 16h3M7 8l7-4"/>',
+      image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
+    };
+
+    function iconSvg(name){
+      const p = ICONS[name] || ICONS.image;
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${p}</svg>`;
+    }
+
+    function escapeHtml(s){
+      const d = document.createElement('div');
+      d.textContent = s == null ? '' : String(s);
+      return d.innerHTML;
+    }
+
+    async function loadAdminEntries(moduleName){
+      try {
+        return await loadModuleEntries(moduleName)
+      } catch (e) {
+        console.error('Failed loading', moduleName, e)
+        return []
+      }
+    }
+
+    const adminToTileKey = {
+      'hotelinfo': 'hotel',
+      'restorani': 'restaurant',
+      'wellness': 'wellness',
+      'sport': 'sport',
+      'okolica': 'nearby',
+      'poruke': 'messages',
+      'budjenje': 'wake',
+      'servis': 'hotel-service',
+      'narudzbe': 'orders',
+      'sobaposluga': 'room-service',
+      'tv': 'tv',
+      'radio': 'radio'
+    };
+
+    async function buildInfoMap(){
+      const map = {};
+      for(const [adminKey, tileKey] of Object.entries(adminToTileKey)){
+        const entries = await loadAdminEntries(adminKey);
+        if(!entries || entries.length === 0) continue;
+        map[tileKey] = {
+          entries: entries,
+          isSimple: SIMPLE_KEYS.has(tileKey)
+        };
+      }
+      return map;
+    }
+
+    function renderRich(entries, tileKey){
+      const grid = document.getElementById('entriesGrid');
+      grid.innerHTML = '';
+      grid.style.display = 'grid';
+
+      entries.forEach((e, idx)=>{
+        const hasImage = e.image && String(e.image).trim().length > 0;
+        const article = document.createElement('article');
+        article.className = 'entry-article';
+        article.innerHTML = `
+          <div class="entry-media ${hasImage ? 'has-image' : 'placeholder'}">
+            ${hasImage
+              ? `<img src="${e.image}" alt="${escapeHtml(e.title || 'Slika')}" loading="lazy" onerror="this.parentElement.classList.add('placeholder'); this.parentElement.innerHTML='${iconSvg('image')}';">`
+              : iconSvg(tileKey)}
+          </div>
+          <div class="entry-body">
+            <div class="entry-kicker">Objava ${idx + 1} od ${entries.length}</div>
+            <h3>${escapeHtml(e.title || '(Bez naslova)')}</h3>
+            ${e.subtitle ? `<p class="entry-sub">${escapeHtml(e.subtitle)}</p>` : ''}
+            ${e.subtitle && e.description ? `<div class="entry-divider"></div>` : ''}
+            ${e.description ? `<p class="entry-desc">${escapeHtml(e.description)}</p>` : '<p class="entry-desc" style="color:var(--text-dim);font-style:italic;">Nema opisa za ovu objavu.</p>'}
+            <div class="entry-index">#${String(idx+1).padStart(2,'0')} — ${escapeHtml(CATEGORY_META[tileKey]?.label || tileKey)}</div>
+          </div>
+        `;
+        grid.appendChild(article);
+      });
+    }
+
+    function renderSimple(entries, tileKey){
+      const grid = document.getElementById('simpleGrid');
+      grid.innerHTML = '';
+      grid.style.display = 'grid';
+      document.getElementById('entriesGrid').style.display = 'none';
+
+      entries.forEach(e=>{
+        const card = document.createElement('div');
+        card.className = 'simple-card';
+        card.innerHTML = `
+          <div class="simple-icon">${iconSvg(tileKey)}</div>
+          <div class="simple-body">
+            <div class="simple-name">${escapeHtml(e.name || e.title || '(bez naziva)')}</div>
+            <div class="simple-value">${escapeHtml(e.value || e.subtitle || e.description || '')}</div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    async function initializePage(){
+      const infoMap = await buildInfoMap();
+      const params = new URLSearchParams(window.location.search);
+      const itemKey = params.get('item') || 'hotel';
+      const guest = params.get('guest') || localStorage.getItem('guestName') || '';
+      const room = params.get('room') || localStorage.getItem('roomNumber') || '';
+      const meta = CATEGORY_META[itemKey] || { label: 'Sadržaj', sub: '' };
+      const data = infoMap[itemKey];
+
+      const titleEl = document.getElementById('title');
+      const subtitleEl = document.getElementById('subtitle');
+      const eyebrowEl = document.getElementById('eyebrow');
+      const heroMetaEl = document.getElementById('heroMeta');
+      const emptyEl = document.getElementById('emptyState');
+
+      eyebrowEl.textContent = `Hotel TV — ${meta.label}`;
+
+      if(!data || !data.entries || data.entries.length === 0){
+        titleEl.textContent = meta.label;
+        subtitleEl.textContent = meta.sub || 'Sadržaj će biti dostupan čim admin unese podatke za ovu kategoriju.';
+        heroMetaEl.innerHTML = `${guest ? `<span class="count-badge">Dobrodošli, ${escapeHtml(guest)}${room ? ` • Soba ${escapeHtml(room)}` : ''}</span>` : ''}<span class="count-badge" style="background:rgba(255,255,255,0.06);border-color:var(--border);color:var(--text-dim);">0 objava</span>`;
+        document.getElementById('entriesGrid').style.display = 'none';
+        document.getElementById('simpleGrid').style.display = 'none';
+        emptyEl.style.display = 'block';
+        emptyEl.innerHTML = `
+          <div class="empty-state">
+            ${iconSvg(itemKey)}
+            <p>Nema dostupnog sadržaja za <b>${escapeHtml(meta.label)}</b></p>
+            <small>Admin još nije dodao objave u ovoj kategoriji. Dodaj ih u Admin panelu pa osvježi ovu stranicu.</small>
+          </div>`;
+        document.title = `${meta.label} — Hotel TV`;
+        return;
+      }
+
+      // Landing: hero shows category, not single post title
+      titleEl.textContent = meta.label;
+      subtitleEl.textContent = meta.sub;
+      heroMetaEl.innerHTML = `${guest ? `<span class="count-badge">Dobrodošli, ${escapeHtml(guest)}${room ? ` • Soba ${escapeHtml(room)}` : ''}</span>` : ''}
+        <span class="count-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M12 8v8"/></svg>
+          ${data.entries.length} ${data.entries.length === 1 ? 'objava' : data.entries.length < 5 ? 'objave' : 'objava'}
+        </span>
+        <span style="font-size:12px;color:var(--text-dim);">Ažurirano • Villa Aura</span>`;
+      document.title = `${meta.label} — Hotel TV`;
+
+      if(data.isSimple){
+        renderSimple(data.entries, itemKey);
+      }else{
+        renderRich(data.entries, itemKey);
+      }
+    }
+
+    initializePage();
+  </script>
+</body>
+</html>

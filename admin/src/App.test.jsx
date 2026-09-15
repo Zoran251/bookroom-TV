@@ -9,6 +9,8 @@ describe('Admin dashboard', () => {
 
     expect(screen.getByText('Hotel overview')).toBeInTheDocument()
     expect(screen.getByText('Hotel content')).toBeInTheDocument()
+    expect(screen.getByText('Account')).toBeInTheDocument()
+    expect(screen.getByText('Marketing & ads')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /add item/i })).toBeInTheDocument()
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
     expect(screen.getByText('All changes saved')).toBeInTheDocument()

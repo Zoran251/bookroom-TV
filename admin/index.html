@@ -212,7 +212,7 @@
     <p class="auth-description-register">Kreiraj admin nalog i odvojenu bazu podataka svog hotela.</p>
     <div class="auth-hotel-fields">
       <div class="field"><label>Naziv hotela</label><input id="authHotelName" autocomplete="organization" placeholder="npr. Hotel Rafaelo"></div>
-      <div class="field"><label>Grad (opciono)</label><input id="authCity" autocomplete="address-level2" placeholder="npr. Sarajevo"></div>
+      <div class="field"><label>Grad</label><input id="authCity" autocomplete="address-level2" placeholder="npr. Sarajevo"></div>
     </div>
     <div class="field"><label>Korisničko ime</label><input id="authUsername" autocomplete="username" placeholder="npr. hotelrafaelo"></div>
     <div class="field"><label>PIN (najmanje 6 znakova)</label><input id="authPin" type="password" autocomplete="current-password" inputmode="numeric" placeholder="Unesite PIN"></div>
@@ -323,8 +323,10 @@ async function authenticate(){
     if(pin.length < 6){ throw new Error('PIN mora imati najmanje 6 znakova.'); }
     if(isRegisterMode){
       const hotelName = document.getElementById('authHotelName').value.trim();
+      const city = document.getElementById('authCity').value.trim();
       if(!hotelName){ throw new Error('Naziv hotela je obavezan.'); }
-      await signUpAdmin({ username, pin, hotelName, city: document.getElementById('authCity').value.trim() });
+      if(!city){ throw new Error('Grad je obavezan.'); }
+      await signUpAdmin({ username, pin, hotelName, city });
     } else {
       await signInAdmin(username, pin);
     }
@@ -368,6 +370,8 @@ if (!window.storage) {
  
 const CATEGORIES = [
   { id:'hotelinfo',  label:'Hotelske informacije',    type:'rich',   sub:'Opšte informacije o hotelu (radno vrijeme, sadržaji, pravila).' },
+  { id:'account',    label:'Nalog',                   type:'rich',   sub:'Naziv hotela, lokacija, kontakt i detalji o hotelu.' },
+  { id:'marketing',  label:'Marketing i oglasi',      type:'rich',   sub:'Baneri, slike i oglasi koji se rotiraju na TV-u.' },
   { id:'restorani',  label:'Restorani i barovi',       type:'rich',   sub:'Svaki restoran/bar kao zaseban unos sa opisom i slikom.' },
   { id:'wellness',   label:'Wellness & beauty centri',  type:'rich',   sub:'Spa i beauty ponuda, tretmani, radno vrijeme.' },
   { id:'sport',      label:'Sportske aktivnosti',       type:'rich',   sub:'Aktivnosti, tereni, oprema za iznajmljivanje.' },
@@ -562,12 +566,19 @@ async function renderEntries(){
  
     if(cat.type === 'rich'){
       const thumbStyle = entry.image ? `style="background-image:url('${entry.image}')"` : '';
+      const titleText = cat.id === 'account' ? (entry.title || entry.hotelName || entry.name || '(bez naziva)') : (entry.title || '(bez naslova)');
+      const subtitleText = cat.id === 'account'
+        ? (entry.subtitle || entry.location || entry.contact || '')
+        : (entry.subtitle || '');
+      const descriptionText = cat.id === 'account'
+        ? (entry.description || entry.email || entry.website || entry.notes || '')
+        : (entry.description || '');
       card.innerHTML = `
         <div class="entry-thumb" ${thumbStyle}>${entry.image ? '' : icon('image')}</div>
         <div class="entry-body">
-          <div class="entry-title">${escapeHtml(entry.title || '(bez naslova)')}</div>
-          ${entry.subtitle ? `<div class="entry-sub">${escapeHtml(entry.subtitle)}</div>` : ''}
-          ${entry.description ? `<div class="entry-desc">${escapeHtml(entry.description)}</div>` : ''}
+          <div class="entry-title">${escapeHtml(titleText)}</div>
+          ${subtitleText ? `<div class="entry-sub">${escapeHtml(subtitleText)}</div>` : ''}
+          ${descriptionText ? `<div class="entry-desc">${escapeHtml(descriptionText)}</div>` : ''}
         </div>
         <div class="entry-actions">
           <button class="btn btn-ghost btn-small" data-action="edit" data-id="${entry.id}">Uredi</button>
@@ -789,14 +800,36 @@ async function openModal(cat, entryId){
   state.pendingImage = entry.image || null;
  
   if(cat.type === 'rich'){
-    fields.innerHTML = `
-      <div class="field"><label>Naslov</label><input id="f_title" value="${escapeAttr(entry.title||'')}" placeholder="npr. Restoran Panorama"></div>
-      <div class="field"><label>Podnaslov (opciono)</label><input id="f_subtitle" value="${escapeAttr(entry.subtitle||'')}" placeholder="npr. Otvoreno 07:00–22:00"></div>
-      <div class="field"><label>Opis</label><textarea id="f_description" placeholder="Kratak opis koji vidi gost...">${entry.description||''}</textarea></div>
-      <div class="field">
-        <label>Slika</label>
-        <div id="imageFieldWrap"></div>
-      </div>`;
+    if(cat.id === 'account'){
+      fields.innerHTML = `
+        <div class="field"><label>Naziv hotela</label><input id="f_title" value="${escapeAttr(entry.title || entry.hotelName || entry.name || '')}" placeholder="npr. Hotel Rafaelo"></div>
+        <div class="field"><label>Lokacija</label><input id="f_subtitle" value="${escapeAttr(entry.subtitle || entry.location || '')}" placeholder="npr. Sarajevo, BiH"></div>
+        <div class="field"><label>Kontakt informacije</label><input id="f_contact" value="${escapeAttr(entry.contact || '')}" placeholder="npr. +387 61 123 456"></div>
+        <div class="field"><label>Email</label><input id="f_email" type="email" value="${escapeAttr(entry.email || '')}" placeholder="info@hotel.ba"></div>
+        <div class="field"><label>Website</label><input id="f_website" value="${escapeAttr(entry.website || '')}" placeholder="www.hotel.ba"></div>
+        <div class="field"><label>Napomene</label><textarea id="f_description" placeholder="Dodatan opis hotelovog profila...">${entry.description || entry.notes || ''}</textarea></div>
+        <div class="field"><label>Logo ili slika</label><div id="imageFieldWrap"></div></div>`;
+    } else if(cat.id === 'marketing'){
+      fields.innerHTML = `
+        <div class="field"><label>Naziv oglasa</label><input id="f_title" value="${escapeAttr(entry.title||'')}" placeholder="npr. Summer offer"></div>
+        <div class="field"><label>Tip medija</label><input id="f_mediaType" value="${escapeAttr(entry.subtitle || entry.mediaType || 'Image')}" placeholder="Image / Banner / Video"></div>
+        <div class="field"><label>URL slike / banera</label><input id="f_url" value="${escapeAttr(entry.url || entry.image || '')}" placeholder="https://... / data:image/..."></div>
+        <div class="field-row">
+          <div class="field"><label>Datum početka</label><input id="f_startDate" type="date" value="${escapeAttr(entry.startDate || '')}"></div>
+          <div class="field"><label>Datum završetka</label><input id="f_endDate" type="date" value="${escapeAttr(entry.endDate || '')}"></div>
+        </div>
+        <div class="field"><label>Napomena</label><textarea id="f_description" placeholder="Opis kampanje...">${entry.description || entry.notes || ''}</textarea></div>
+        <div class="field"><label>Slika</label><div id="imageFieldWrap"></div></div>`;
+    } else {
+      fields.innerHTML = `
+        <div class="field"><label>Naslov</label><input id="f_title" value="${escapeAttr(entry.title||'')}" placeholder="npr. Restoran Panorama"></div>
+        <div class="field"><label>Podnaslov (opciono)</label><input id="f_subtitle" value="${escapeAttr(entry.subtitle||'')}" placeholder="npr. Otvoreno 07:00–22:00"></div>
+        <div class="field"><label>Opis</label><textarea id="f_description" placeholder="Kratak opis koji vidi gost...">${entry.description||''}</textarea></div>
+        <div class="field">
+          <label>Slika</label>
+          <div id="imageFieldWrap"></div>
+        </div>`;
+    }
     const wrap = document.getElementById('imageFieldWrap');
     if(entry.image){ renderImagePreview(wrap, entry.image, 'trenutna slika'); }
     else { renderImageDrop(wrap); }
@@ -823,13 +856,42 @@ async function saveEntry(cat){
   if(cat.type === 'rich'){
     const title = document.getElementById('f_title').value.trim();
     if(!title){ alert('Naslov je obavezan.'); return; }
-    entry = {
-      id: state.editingId || 'e_' + Date.now(),
-      title,
-      subtitle: document.getElementById('f_subtitle').value.trim(),
-      description: document.getElementById('f_description').value.trim(),
-      image: state.pendingImage || '',
-    };
+    if(cat.id === 'account'){
+      entry = {
+        id: state.editingId || 'e_' + Date.now(),
+        title,
+        subtitle: document.getElementById('f_subtitle').value.trim(),
+        description: document.getElementById('f_description').value.trim(),
+        image: state.pendingImage || '',
+        hotelName: title,
+        location: document.getElementById('f_subtitle').value.trim(),
+        contact: document.getElementById('f_contact').value.trim(),
+        email: document.getElementById('f_email').value.trim(),
+        website: document.getElementById('f_website').value.trim(),
+        notes: document.getElementById('f_description').value.trim(),
+      };
+    } else if(cat.id === 'marketing'){
+      entry = {
+        id: state.editingId || 'e_' + Date.now(),
+        title,
+        subtitle: document.getElementById('f_mediaType').value.trim() || 'Image',
+        description: document.getElementById('f_description').value.trim(),
+        image: state.pendingImage || document.getElementById('f_url').value.trim() || '',
+        mediaType: document.getElementById('f_mediaType').value.trim() || 'Image',
+        url: document.getElementById('f_url').value.trim(),
+        startDate: document.getElementById('f_startDate').value,
+        endDate: document.getElementById('f_endDate').value,
+        notes: document.getElementById('f_description').value.trim(),
+      };
+    } else {
+      entry = {
+        id: state.editingId || 'e_' + Date.now(),
+        title,
+        subtitle: document.getElementById('f_subtitle').value.trim(),
+        description: document.getElementById('f_description').value.trim(),
+        image: state.pendingImage || '',
+      };
+    }
   } else {
     const name = document.getElementById('f_name').value.trim();
     if(!name){ alert('Ovo polje je obavezno.'); return; }

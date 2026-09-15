@@ -52,6 +52,8 @@ const initialDevices = [
 const navItems = [
   { id: 'overview', label: 'Overview' },
   { id: 'hotelContent', label: 'Hotel content' },
+  { id: 'account', label: 'Account' },
+  { id: 'marketing', label: 'Marketing & ads' },
   { id: 'rooms', label: 'Rooms' },
   { id: 'guests', label: 'Guests' },
   { id: 'reservations', label: 'Reservations' },
@@ -64,6 +66,22 @@ const defaultForms = {
     subtitle: '',
     description: '',
     status: 'Published',
+  },
+  account: {
+    hotelName: '',
+    location: '',
+    contact: '',
+    email: '',
+    website: '',
+    notes: '',
+  },
+  marketing: {
+    title: '',
+    mediaType: 'Image',
+    url: '',
+    startDate: '',
+    endDate: '',
+    notes: '',
   },
   rooms: {
     number: '',
@@ -96,6 +114,28 @@ const defaultForms = {
 function App() {
   const [activeTab, setActiveTab] = useState('overview')
   const [contentItems, setContentItems] = useState(initialContent)
+  const [accountItems, setAccountItems] = useState([
+    {
+      id: 1,
+      hotelName: 'Villa Aura',
+      location: 'Sarajevo, BiH',
+      contact: '+387 61 123 456',
+      email: 'info@villaaura.ba',
+      website: 'www.villaaura.ba',
+      notes: 'Hotel blizu centra, 24/7 recepcija.',
+    },
+  ])
+  const [marketingItems, setMarketingItems] = useState([
+    {
+      id: 1,
+      title: 'Summer offer',
+      mediaType: 'Image',
+      url: 'https://images.unsplash.com/...',
+      startDate: '2026-09-15',
+      endDate: '2026-09-30',
+      notes: 'Breakfast package campaign',
+    },
+  ])
   const [rooms, setRooms] = useState(initialRooms)
   const [guests, setGuests] = useState(initialGuests)
   const [reservations, setReservations] = useState(initialReservations)
@@ -115,6 +155,8 @@ function App() {
 
   const currentCollection = {
     hotelContent: contentItems,
+    account: accountItems,
+    marketing: marketingItems,
     rooms,
     guests,
     reservations,
@@ -161,6 +203,46 @@ function App() {
         setContentItems((prev) => prev.map((item) => (item.id === editingId ? nextItem : item)))
       } else {
         setContentItems((prev) => [nextItem, ...prev])
+      }
+    }
+
+    if (activeTab === 'account') {
+      if (!formState.hotelName.trim()) return
+
+      const nextItem = {
+        id: editingId ?? Date.now(),
+        hotelName: formState.hotelName,
+        location: formState.location,
+        contact: formState.contact,
+        email: formState.email,
+        website: formState.website,
+        notes: formState.notes,
+      }
+
+      if (editingId) {
+        setAccountItems((prev) => prev.map((item) => (item.id === editingId ? nextItem : item)))
+      } else {
+        setAccountItems((prev) => [nextItem, ...prev])
+      }
+    }
+
+    if (activeTab === 'marketing') {
+      if (!formState.title.trim()) return
+
+      const nextItem = {
+        id: editingId ?? Date.now(),
+        title: formState.title,
+        mediaType: formState.mediaType,
+        url: formState.url,
+        startDate: formState.startDate,
+        endDate: formState.endDate,
+        notes: formState.notes,
+      }
+
+      if (editingId) {
+        setMarketingItems((prev) => prev.map((item) => (item.id === editingId ? nextItem : item)))
+      } else {
+        setMarketingItems((prev) => [nextItem, ...prev])
       }
     }
 
@@ -240,6 +322,8 @@ function App() {
 
   const deleteItem = (id) => {
     if (activeTab === 'hotelContent') setContentItems((prev) => prev.filter((item) => item.id !== id))
+    if (activeTab === 'account') setAccountItems((prev) => prev.filter((item) => item.id !== id))
+    if (activeTab === 'marketing') setMarketingItems((prev) => prev.filter((item) => item.id !== id))
     if (activeTab === 'rooms') setRooms((prev) => prev.filter((item) => item.id !== id))
     if (activeTab === 'guests') setGuests((prev) => prev.filter((item) => item.id !== id))
     if (activeTab === 'reservations') setReservations((prev) => prev.filter((item) => item.id !== id))
@@ -349,6 +433,70 @@ function App() {
                   <option>Published</option>
                   <option>Draft</option>
                 </select>
+              </label>
+            </>
+          )}
+
+          {activeTab === 'account' && (
+            <>
+              <label>
+                Naziv hotela
+                <input value={formState.hotelName || ''} onChange={(e) => handleInputChange('hotelName', e.target.value)} />
+              </label>
+              <label>
+                Lokacija
+                <input value={formState.location || ''} onChange={(e) => handleInputChange('location', e.target.value)} />
+              </label>
+              <label>
+                Kontakt informacije
+                <input value={formState.contact || ''} onChange={(e) => handleInputChange('contact', e.target.value)} />
+              </label>
+              <label>
+                Email
+                <input type="email" value={formState.email || ''} onChange={(e) => handleInputChange('email', e.target.value)} />
+              </label>
+              <label>
+                Website
+                <input value={formState.website || ''} onChange={(e) => handleInputChange('website', e.target.value)} />
+              </label>
+              <label>
+                Napomene
+                <textarea value={formState.notes || ''} onChange={(e) => handleInputChange('notes', e.target.value)} rows="4" />
+              </label>
+            </>
+          )}
+
+          {activeTab === 'marketing' && (
+            <>
+              <label>
+                Naziv kampanje
+                <input value={formState.title || ''} onChange={(e) => handleInputChange('title', e.target.value)} />
+              </label>
+              <label>
+                Tip medija
+                <select value={formState.mediaType || 'Image'} onChange={(e) => handleInputChange('mediaType', e.target.value)}>
+                  <option>Image</option>
+                  <option>Video</option>
+                  <option>Banner</option>
+                </select>
+              </label>
+              <label>
+                URL ili slika
+                <input value={formState.url || ''} onChange={(e) => handleInputChange('url', e.target.value)} />
+              </label>
+              <div className="split-field">
+                <label>
+                  Datum početka
+                  <input type="date" value={formState.startDate || ''} onChange={(e) => handleInputChange('startDate', e.target.value)} />
+                </label>
+                <label>
+                  Datum završetka
+                  <input type="date" value={formState.endDate || ''} onChange={(e) => handleInputChange('endDate', e.target.value)} />
+                </label>
+              </div>
+              <label>
+                Napomena
+                <textarea value={formState.notes || ''} onChange={(e) => handleInputChange('notes', e.target.value)} rows="4" />
               </label>
             </>
           )}

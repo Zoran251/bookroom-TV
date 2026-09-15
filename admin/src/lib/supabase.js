@@ -20,11 +20,17 @@ const getSupabaseAnonKey = () => {
 const supabaseUrl = getSupabaseUrl()
 const supabaseAnonKey = getSupabaseAnonKey()
 
-const publicSupabaseUrl = supabaseUrl || 'https://uldstujbduldbutjgksd.supabase.co'
-const publicSupabaseAnonKey = supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ1bGRzdHVqamJkdWxkYnV0amdrc2QiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4ODAzNTcwMSwiZXhwIjoyMTAzNjExNzAxfQ.IAfSJwcDHOUXe7Yolu3_-HJW8tJrzZjLPY-7xE'
+const publicSupabaseUrl = supabaseUrl
+const publicSupabaseAnonKey = supabaseAnonKey
+
+const hasSupabaseConfig = Boolean(publicSupabaseUrl && publicSupabaseAnonKey)
+
+if (!hasSupabaseConfig && typeof window !== 'undefined') {
+  console.warn('Supabase config missing: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY before starting the admin app.')
+}
 
 export const supabase =
-  createClient
+  hasSupabaseConfig && createClient
     ? createClient(publicSupabaseUrl, publicSupabaseAnonKey, {
         auth: {
           persistSession: true,
