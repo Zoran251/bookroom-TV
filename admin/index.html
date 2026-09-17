@@ -184,7 +184,7 @@
   .auth-card p{ color:var(--text-muted); font-size:13px; margin-bottom:20px; }
   .auth-card .field{ margin-bottom:14px; }
   .auth-card .btn{ width:100%; justify-content:center; }
-  .auth-toggle{ display:block; width:100%; margin-top:14px; padding:0; border:0; background:transparent; text-align:center; color:var(--text-muted); font:inherit; font-size:12px; cursor:pointer; }
+  .auth-toggle{ display:block; width:100%; margin-top:14px; text-align:center; color:var(--text-muted); font-size:12px; cursor:pointer; text-decoration:none; }
   .auth-toggle:hover{ color:var(--text-main); }
   .auth-error{ min-height:18px; color:var(--danger); font-size:12px; margin-bottom:10px; }
   .auth-error.success{ color:var(--accent-teal); }
@@ -220,7 +220,7 @@
     <div class="field"><label>PIN (najmanje 6 znakova)</label><input id="authPin" type="password" autocomplete="current-password" inputmode="numeric" placeholder="Unesite PIN"></div>
     <div class="auth-error" id="authError" role="alert"></div>
     <button class="btn btn-primary" id="authSubmit" type="submit">Prijavi se</button>
-    <button class="auth-toggle" id="authToggle" type="button">Nemaš admin nalog? Registruj hotel</button>
+    <a class="auth-toggle" id="authToggle" href="?mode=register">Nemaš admin nalog? Registruj hotel</a>
   </form>
 </div>
  
@@ -309,6 +309,7 @@ function setAuthMode(register){
   authCard.classList.toggle('register', register);
   authSubmit.textContent = register ? 'Registruj admina' : 'Prijavi se';
   authToggle.textContent = register ? 'Već imaš admin profil? Prijavi se' : 'Nemaš admin profil? Registruj se';
+  authToggle.href = register ? '?mode=login' : '?mode=register';
   authError.textContent = '';
 }
 
@@ -352,7 +353,6 @@ async function authenticate(){
   }
 }
 
-authToggle.addEventListener('click', () => setAuthMode(!isRegisterMode));
 authForm.addEventListener('submit', (event) => {
   event.preventDefault();
   authenticate();
