@@ -109,6 +109,16 @@
     margin-top:1px;
   }
 
+  .brand-contact{
+    display:block;
+    font-size:9px;
+    letter-spacing:0.02em;
+    color:var(--text-muted);
+    text-transform:none;
+    font-family:'Inter',sans-serif;
+    margin-top:4px;
+  }
+
   .welcome{
     font-family:'Fraunces', serif;
     font-size: clamp(14px, 1.6vw, 20px);
@@ -118,16 +128,35 @@
     flex:1;
   }
 
+  .header-center{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    flex:1;
+  }
+
+  .guest-info{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    color:var(--text-main);
+    font-size:clamp(11px, 1vw, 13px);
+  }
+
+  .guest-info .room-pill{ color:var(--text-main); }
+
   .welcome b{ font-weight:600; color:var(--accent-gold); }
 
-  .header-contact{
+  .header-time{
     display:flex;
     flex-direction:column;
     align-items:flex-end;
     gap:3px;
-    color:var(--text-muted);
+    color:var(--text-main);
     font-size:clamp(10px, 0.9vw, 12px);
     text-align:right;
+    white-space:nowrap;
   }
 
   .status-cluster{
@@ -394,25 +423,20 @@
         <div class="brand-mark">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2 C9 6 6 8 6 12 a6 6 0 0 0 12 0 c0-4-3-6-6-10Z"/></svg>
         </div>
-        <div class="brand-name"><span id="hotelName"></span><span id="hotelCity"></span></div>
+        <div class="brand-name"><span id="hotelName"></span><span id="hotelCity"></span><span class="brand-contact" id="hotelContact"></span></div>
       </div>
 
-      <div class="welcome" id="hotelWelcome"></div>
-
-      <div class="status-cluster">
-        <div class="room-pill" id="roomNumber"></div>
-        <div class="status-item">
+      <div class="header-center">
+        <div class="welcome" id="hotelWelcome"></div>
+        <div class="guest-info">
           <strong id="guestName"></strong>
+          <div class="room-pill" id="roomNumber"></div>
         </div>
-        <div class="status-item">
-          <strong id="clock"></strong>
-        </div>
-        <div class="status-item" id="dateDisplay"></div>
       </div>
 
-      <div class="header-contact">
-        <span id="hotelPhone"></span>
-        <span id="hotelEmail"></span>
+      <div class="header-time">
+        <strong id="clock"></strong>
+        <span id="dateDisplay"></span>
       </div>
     </div>
 
@@ -493,8 +517,7 @@
       document.getElementById('hotelName').textContent = hotel.name || '';
       document.getElementById('hotelCity').textContent = hotel.city || '';
       document.getElementById('hotelWelcome').textContent = hotel.welcome_text || '';
-      document.getElementById('hotelPhone').textContent = hotel.phone || '';
-      document.getElementById('hotelEmail').textContent = hotel.email || '';
+      document.getElementById('hotelContact').textContent = [hotel.phone, hotel.email].filter(Boolean).join(' • ');
     } catch (error) {
       console.error('Failed loading hotel header', error);
     }
