@@ -187,6 +187,7 @@
   .auth-toggle{ display:block; width:100%; margin-top:14px; padding:0; border:0; background:transparent; text-align:center; color:var(--text-muted); font:inherit; font-size:12px; cursor:pointer; }
   .auth-toggle:hover{ color:var(--text-main); }
   .auth-error{ min-height:18px; color:var(--danger); font-size:12px; margin-bottom:10px; }
+  .auth-error.success{ color:var(--accent-teal); }
   .auth-hotel-fields{ display:none; }
   .auth-card.register .auth-hotel-fields{ display:block; }
   .auth-card.register .auth-title-login,
@@ -312,7 +313,13 @@ function setAuthMode(register){
 }
 
 function authMessage(error){
+  authError.classList.remove('success');
   authError.textContent = error && error.message ? error.message : 'Došlo je do greške. Pokušaj ponovo.';
+}
+
+function authSuccess(message){
+  authError.classList.add('success');
+  authError.textContent = message;
 }
 
 async function authenticate(){
@@ -329,6 +336,10 @@ async function authenticate(){
       if(!hotelName){ throw new Error('Naziv hotela je obavezan.'); }
       if(!city){ throw new Error('Grad je obavezan.'); }
       await signUpAdmin({ username, pin, hotelName, city });
+      setAuthMode(false);
+      document.getElementById('authPin').value = '';
+      authSuccess('Registracija je uspješna. Sada se prijavi sa svojim korisničkim imenom i PIN-om.');
+      return;
     } else {
       await signInAdmin(username, pin);
     }

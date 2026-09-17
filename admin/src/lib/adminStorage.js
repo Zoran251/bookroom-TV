@@ -45,7 +45,8 @@ export async function signUpAdmin({ username, pin, hotelName, city }) {
   })
   if (error) throw error
   if (!data.user) throw new Error('Registracija nije uspjela.')
-  if (!data.session) throw new Error('Registracija je kreirana. Potvrdi email, zatim se prijavi.')
+
+  if (data.session) await supabase.auth.signOut()
 
   return { user: data.user }
 }
