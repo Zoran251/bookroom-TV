@@ -382,7 +382,7 @@
         <div class="brand-mark">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2 C9 6 6 8 6 12 a6 6 0 0 0 12 0 c0-4-3-6-6-10Z"/></svg>
         </div>
-        <div class="brand-name">Villa Aura<span>Hotel &amp; Spa</span></div>
+        <div class="brand-name"><span id="hotelName">Hotel</span><span id="hotelCity"></span></div>
       </div>
 
       <div class="welcome">Dobrodošli, <b id="guestName">Gospođo Jozić</b></div>
@@ -468,7 +468,21 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-  import { loadModuleEntries } from './admin/src/lib/adminStorage.js';
+  import { loadHotelHeader, loadModuleEntries } from './admin/src/lib/adminStorage.js';
+
+  async function initializeHotelHeader() {
+    try {
+      const hotel = await loadHotelHeader();
+      if (!hotel) return;
+
+      document.getElementById('hotelName').textContent = hotel.name || 'Hotel';
+      document.getElementById('hotelCity').textContent = hotel.city || '';
+      const welcome = hotel.welcome_text || 'Dobrodošli';
+      document.querySelector('.welcome').firstChild.textContent = `${welcome}, `;
+    } catch (error) {
+      console.error('Failed loading hotel header', error);
+    }
+  }
 
   async function loadAdminEntries(moduleName) {
     try {
@@ -667,6 +681,7 @@
 
   // Initialize tiles after loading admin data
   async function initializeTiles() {
+    await initializeHotelHeader();
     infoMap = await buildInfoMap();
     await initializeMarketingPanel();
     
