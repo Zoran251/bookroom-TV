@@ -399,6 +399,17 @@
 
       <div class="welcome" id="hotelWelcome"></div>
 
+      <div class="status-cluster">
+        <div class="room-pill" id="roomNumber"></div>
+        <div class="status-item">
+          <strong id="guestName"></strong>
+        </div>
+        <div class="status-item">
+          <strong id="clock"></strong>
+        </div>
+        <div class="status-item" id="dateDisplay"></div>
+      </div>
+
       <div class="header-contact">
         <span id="hotelPhone"></span>
         <span id="hotelEmail"></span>
@@ -472,7 +483,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-  import { loadHotelHeader, loadModuleEntries } from './admin/src/lib/adminStorage.js';
+  import { loadBookings, loadHotelHeader, loadModuleEntries } from './admin/src/lib/adminStorage.js';
 
   async function initializeHotelHeader() {
     try {
@@ -497,6 +508,47 @@
       return [];
     }
   }
+
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toLocaleTimeString('bs-BA', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    document.getElementById('dateDisplay').textContent = now.toLocaleDateString('bs-BA', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
+  async function initializeGuestData() {
+    const params = new URLSearchParams(window.location.search);
+    const requestedRoom = params.get('room') || '';
+    const guestName = document.getElementById('guestName');
+    const roomNumber = document.getElementById('roomNumber');
+
+    try {
+      const bookings = await loadBookings();
+      const today = new Date().toISOString().slice(0, 10);
+      const currentBookings = bookings.filter((booking) =>
+        booking.checkIn <= today && booking.checkOut >= today,
+      );
+      const booking = requestedRoom
+        ? bookings.find((item) => item.room === requestedRoom)
+        : currentBookings[0];
+
+      guestName.textContent = booking?.guestName || '';
+      roomNumber.textContent = booking?.room || '';
+    } catch (error) {
+      console.error('Failed loading guest data', error);
+      guestName.textContent = '';
+      roomNumber.textContent = '';
+    }
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
 
   // Map admin categories to TV tile data-info keys
   const adminToTileKey = {
@@ -649,6 +701,7 @@
   // Initialize tiles after loading admin data
   async function initializeTiles() {
     await initializeHotelHeader();
+    await initializeGuestData();
     infoMap = await buildInfoMap();
     await initializeMarketingPanel();
     
