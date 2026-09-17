@@ -184,7 +184,8 @@
   .auth-card p{ color:var(--text-muted); font-size:13px; margin-bottom:20px; }
   .auth-card .field{ margin-bottom:14px; }
   .auth-card .btn{ width:100%; justify-content:center; }
-  .auth-toggle{ margin-top:14px; text-align:center; color:var(--text-muted); font-size:12px; cursor:pointer; }
+  .auth-toggle{ display:block; width:100%; margin-top:14px; padding:0; border:0; background:transparent; text-align:center; color:var(--text-muted); font:inherit; font-size:12px; cursor:pointer; }
+  .auth-toggle:hover{ color:var(--text-main); }
   .auth-error{ min-height:18px; color:var(--danger); font-size:12px; margin-bottom:10px; }
   .auth-hotel-fields{ display:none; }
   .auth-card.register .auth-hotel-fields{ display:block; }
@@ -205,7 +206,7 @@
 <body>
 
 <div class="auth-gate" id="authGate">
-  <div class="auth-card" id="authCard">
+  <form class="auth-card" id="authCard">
     <h1 class="auth-title-login">Prijava admina</h1>
     <h1 class="auth-title-register">Registracija hotela</h1>
     <p class="auth-description-login">Prijavi se da upravljaš podacima svog hotela.</p>
@@ -217,9 +218,9 @@
     <div class="field"><label>Korisničko ime</label><input id="authUsername" autocomplete="username" placeholder="npr. hotelrafaelo"></div>
     <div class="field"><label>PIN (najmanje 6 znakova)</label><input id="authPin" type="password" autocomplete="current-password" inputmode="numeric" placeholder="Unesite PIN"></div>
     <div class="auth-error" id="authError" role="alert"></div>
-    <button class="btn btn-primary" id="authSubmit">Prijavi se</button>
-    <div class="auth-toggle" id="authToggle">Nemaš admin nalog? Registruj hotel</div>
-  </div>
+    <button class="btn btn-primary" id="authSubmit" type="submit">Prijavi se</button>
+    <button class="auth-toggle" id="authToggle" type="button">Nemaš admin nalog? Registruj hotel</button>
+  </form>
 </div>
  
 <div class="topbar">
@@ -299,6 +300,7 @@ const authCard = document.getElementById('authCard');
 const authSubmit = document.getElementById('authSubmit');
 const authToggle = document.getElementById('authToggle');
 const authError = document.getElementById('authError');
+const authForm = document.getElementById('authCard');
 let isRegisterMode = false;
 
 function setAuthMode(register){
@@ -340,7 +342,10 @@ async function authenticate(){
 }
 
 authToggle.addEventListener('click', () => setAuthMode(!isRegisterMode));
-authSubmit.addEventListener('click', authenticate);
+authForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  authenticate();
+});
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await signOutAdmin();
   authGate.style.display = 'flex';
