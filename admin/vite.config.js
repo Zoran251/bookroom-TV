@@ -4,9 +4,16 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/admin/',
+  root: '..',
   build: {
-    outDir: '../admin-deploy',
+    outDir: 'admin-deploy',
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        home: '../index.html',
+        admin: '../admin/index.html',
+        tv: '../hotel-tv-panel.html',
+      },
+    },
   },
 })

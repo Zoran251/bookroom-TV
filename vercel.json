@@ -1,5 +1,5 @@
 {
   "installCommand": "npm ci --prefix admin",
-  "buildCommand": "npm --prefix admin run build && mkdir -p deploy/admin && cp index.html deploy/index.html && cp hotel-tv-panel.html deploy/hotel-tv-panel.html && cp -R admin-deploy/. deploy/admin/",
-  "outputDirectory": "deploy"
+  "buildCommand": "npm --prefix admin run build",
+  "outputDirectory": "admin-deploy"
 }
