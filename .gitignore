@@ -2,6 +2,7 @@
 dist/
 admin/dist/
 admin-deploy/
+deploy/
 node_modules/
 .env
 .env.*
