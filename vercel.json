@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm --prefix admin run build",
+  "outputDirectory": "admin/dist",
+  "rewrites": [
+    { "source": "/admin", "destination": "/" },
+    { "source": "/admin/:path*", "destination": "/:path*" }
+  ]
+}

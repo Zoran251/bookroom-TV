@@ -1,4 +1,10 @@
 .vite/
+dist/
+admin/dist/
+node_modules/
+.env
+.env.*
+!.env.example
 admin/.env
 admin/.env.*
 !admin/.env.example
