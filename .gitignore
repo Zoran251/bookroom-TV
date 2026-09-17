@@ -1,6 +1,7 @@
 .vite/
 dist/
 admin/dist/
+admin-deploy/
 node_modules/
 .env
 .env.*

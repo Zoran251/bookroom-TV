@@ -1,9 +1,9 @@
 {
   "installCommand": "npm ci --prefix admin",
   "buildCommand": "npm --prefix admin run build",
-  "outputDirectory": "admin/dist",
+  "outputDirectory": ".",
   "rewrites": [
-    { "source": "/admin", "destination": "/" },
-    { "source": "/admin/:path*", "destination": "/:path*" }
+    { "source": "/admin", "destination": "/admin-deploy/index.html" },
+    { "source": "/admin/:path*", "destination": "/admin-deploy/:path*" }
   ]
 }
