@@ -199,6 +199,102 @@
   .auth-card.register .auth-title-register{ margin-bottom:8px; }
   .auth-card.register .auth-description-register{ margin-bottom:20px; }
   .logout-btn{ margin-left:12px; }
+
+  @media (max-width: 760px){
+    .topbar{
+      align-items:flex-start;
+      flex-wrap:wrap;
+      gap:12px;
+      padding:14px 16px;
+    }
+    .topbar > div:last-child{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:6px;
+    }
+    .save-status{ min-width:0; margin-right:auto; }
+    .logout-btn{ margin-left:0; }
+
+    .layout{ display:block; min-height:0; }
+    .sidebar{
+      width:100%;
+      padding:10px 10px 8px;
+      border-right:0;
+      border-bottom:1px solid var(--border);
+      overflow-x:auto;
+      overscroll-behavior-x:contain;
+    }
+    .sidebar h3{ padding:5px 8px 7px; }
+    .sidebar .divider{ margin:8px 6px; }
+    #hotelHeaderNavItem,
+    #bookingNavItem,
+    #navList{
+      display:flex;
+      gap:6px;
+      min-width:max-content;
+    }
+    .nav-item{
+      flex:0 0 auto;
+      margin-bottom:0;
+      padding:9px 10px;
+      font-size:12px;
+    }
+    .nav-item .count{ margin-left:4px; }
+
+    .content{
+      width:100%;
+      max-width:none;
+      padding:20px 14px 32px;
+    }
+    .content-header{
+      align-items:stretch;
+      flex-direction:column;
+      gap:14px;
+      margin-bottom:18px;
+    }
+    .content-title{ font-size:23px; }
+    .content-sub{ line-height:1.45; }
+    #addBtn{ width:100%; justify-content:center; }
+
+    .entry-card,
+    .booking-card{
+      align-items:flex-start;
+      flex-wrap:wrap;
+      gap:10px;
+      padding:12px;
+    }
+    .entry-body,
+    .booking-body{ min-width:calc(100% - 78px); }
+    .entry-desc{ white-space:normal; line-height:1.4; }
+    .entry-actions{
+      width:100%;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+    .entry-actions .btn{ flex:1 1 auto; justify-content:center; }
+    .modal{ padding:20px 16px; max-height:94vh; }
+    .field-row{ flex-direction:column; gap:0; }
+    .modal-actions{ flex-direction:column-reverse; }
+    .modal-actions .btn{ width:100%; justify-content:center; }
+  }
+
+  @media (max-width: 480px){
+    .brand-name{ font-size:15px; }
+    .brand-name span{ letter-spacing:0.16em; }
+    .topbar > div:last-child{ justify-content:stretch; }
+    .topbar > div:last-child .btn{ flex:1; justify-content:center; }
+    .save-status{ flex:1 1 100%; text-align:left; }
+    .auth-gate{ padding:12px; align-items:flex-start; overflow-y:auto; }
+    .auth-card{ margin-top:12px; padding:22px 16px; }
+    .auth-card h1{ font-size:23px; }
+    .auth-card p{ line-height:1.45; }
+    .content{ padding-left:12px; padding-right:12px; }
+    .entry-thumb{ width:54px; height:54px; }
+    .entry-body,
+    .booking-body{ min-width:calc(100% - 68px); }
+  }
  
   ::-webkit-scrollbar{ width:8px; }
   ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.15); border-radius:4px; }
