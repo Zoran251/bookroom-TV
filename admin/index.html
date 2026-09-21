@@ -295,6 +295,51 @@
     .entry-body,
     .booking-body{ min-width:calc(100% - 68px); }
   }
+
+  @media (max-width: 760px){
+    body{ padding-bottom:76px; }
+    .sidebar{
+      position:fixed;
+      left:0;
+      right:0;
+      bottom:0;
+      z-index:30;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      height:66px;
+      padding:7px 10px;
+      background:rgba(20,16,15,0.96);
+      border-top:1px solid var(--border);
+      border-bottom:0;
+      box-shadow:0 -12px 28px rgba(0,0,0,0.26);
+      overflow-x:auto;
+      scrollbar-width:none;
+    }
+    .sidebar::-webkit-scrollbar{ display:none; }
+    .sidebar h3,
+    .sidebar .divider{ display:none; }
+    #hotelHeaderNavItem,
+    #bookingNavItem,
+    #navList{
+      display:contents;
+    }
+    .nav-item{
+      min-width:max-content;
+      height:50px;
+      margin:0;
+      padding:7px 10px;
+      border-radius:10px;
+      flex-direction:column;
+      justify-content:center;
+      gap:3px;
+      font-size:10px;
+      line-height:1;
+    }
+    .nav-item svg{ width:17px; height:17px; }
+    .nav-item .count{ display:none; }
+    .content{ padding-bottom:22px; }
+  }
  
   ::-webkit-scrollbar{ width:8px; }
   ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.15); border-radius:4px; }
