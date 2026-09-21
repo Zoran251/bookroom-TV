@@ -199,6 +199,7 @@
   .auth-card.register .auth-title-register{ margin-bottom:8px; }
   .auth-card.register .auth-description-register{ margin-bottom:20px; }
   .logout-btn{ margin-left:12px; }
+  .mobile-menu-toggle{ display:none; }
 
   @media (max-width: 760px){
     .topbar{
@@ -340,6 +341,45 @@
     .nav-item .count{ display:none; }
     .content{ padding-bottom:22px; }
   }
+
+  @media (max-width: 760px){
+    body{ padding-bottom:0; }
+    .mobile-menu-toggle{ display:inline-flex; }
+    .sidebar{
+      position:fixed;
+      inset:0;
+      z-index:19;
+      display:block;
+      width:100%;
+      height:100vh;
+      padding:86px 14px 24px;
+      border:0;
+      background:rgba(20,16,15,0.98);
+      box-shadow:0 18px 40px rgba(0,0,0,0.35);
+      overflow-y:auto;
+      transform:translateY(-105%);
+      transition:transform .22s ease;
+    }
+    .sidebar.mobile-open{ transform:translateY(0); }
+    .sidebar h3,
+    .sidebar .divider{ display:block; }
+    #hotelHeaderNavItem,
+    #bookingNavItem,
+    #navList{ display:block; min-width:0; }
+    .nav-item{
+      width:100%;
+      height:auto;
+      min-width:0;
+      margin-bottom:4px;
+      padding:12px;
+      flex-direction:row;
+      justify-content:flex-start;
+      gap:10px;
+      font-size:13px;
+      line-height:normal;
+    }
+    .nav-item .count{ display:block; margin-left:auto; }
+  }
  
   ::-webkit-scrollbar{ width:8px; }
   ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.15); border-radius:4px; }
@@ -374,13 +414,14 @@
   </div>
   <div>
     <span class="save-status" id="saveStatus">Spremno</span>
+    <button class="btn btn-ghost btn-small mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-expanded="false">☰ Sekcije</button>
     <a class="btn btn-ghost btn-small" href="/hotel-tv-panel.html" target="_blank" rel="noopener">TV konzola</a>
     <button class="btn btn-ghost btn-small logout-btn" id="logoutBtn">Odjava</button>
   </div>
 </div>
  
 <div class="layout">
-  <div class="sidebar">
+  <div class="sidebar" id="mobileSidebar">
     <h3>Sistem</h3>
     <div id="hotelHeaderNavItem"></div>
     <div id="bookingNavItem"></div>
@@ -444,7 +485,15 @@ const authSubmit = document.getElementById('authSubmit');
 const authToggle = document.getElementById('authToggle');
 const authError = document.getElementById('authError');
 const authForm = document.getElementById('authCard');
+const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+const mobileSidebar = document.getElementById('mobileSidebar');
 let isRegisterMode = false;
+
+function closeMobileMenu(){
+  mobileSidebar.classList.remove('mobile-open');
+  mobileMenuToggle.setAttribute('aria-expanded', 'false');
+  mobileMenuToggle.textContent = '☰ Sekcije';
+}
 
 function setAuthMode(register){
   isRegisterMode = register;
@@ -503,6 +552,11 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   await signOutAdmin();
   authGate.style.display = 'flex';
   setAuthMode(false);
+});
+mobileMenuToggle.addEventListener('click', () => {
+  const isOpen = mobileSidebar.classList.toggle('mobile-open');
+  mobileMenuToggle.setAttribute('aria-expanded', String(isOpen));
+  mobileMenuToggle.textContent = isOpen ? '× Zatvori' : '☰ Sekcije';
 });
 
 if (!window.storage) {
@@ -671,7 +725,7 @@ async function renderSidebar(){
   const headerItem = document.createElement('div');
   headerItem.className = 'nav-item' + (state.current === 'hotelHeader' ? ' active' : '');
   headerItem.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">${ICONS.hotelinfo}</svg><span>Informacije zaglavlja</span>`;
-  headerItem.addEventListener('click', () => { state.current = 'hotelHeader'; renderAll(); });
+  headerItem.addEventListener('click', () => { state.current = 'hotelHeader'; closeMobileMenu(); renderAll(); });
   hotelHeaderNav.innerHTML = '';
   hotelHeaderNav.appendChild(headerItem);
 
@@ -680,7 +734,7 @@ async function renderSidebar(){
   bItem.className = 'nav-item' + (state.current === 'bookings' ? ' active' : '');
   bItem.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">${ICONS.bookings}</svg>
     <span>${BOOKINGS_LABEL}</span><span class="count">${bookings.length}</span>`;
-  bItem.addEventListener('click', () => { state.current = 'bookings'; renderAll(); });
+  bItem.addEventListener('click', () => { state.current = 'bookings'; closeMobileMenu(); renderAll(); });
   bookingNav.innerHTML = '';
   bookingNav.appendChild(bItem);
  
@@ -692,7 +746,7 @@ async function renderSidebar(){
     item.className = 'nav-item' + (cat.id === state.current ? ' active' : '');
     item.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">${ICONS[cat.id]}</svg>
       <span>${cat.label}</span><span class="count">${entries.length}</span>`;
-    item.addEventListener('click', () => { state.current = cat.id; renderAll(); });
+    item.addEventListener('click', () => { state.current = cat.id; closeMobileMenu(); renderAll(); });
     nav.appendChild(item);
   }
 }
