@@ -368,6 +368,52 @@
   .g-tv{ grid-column:5 / 6; grid-row:3 / 4; }
   .g-radio{ grid-column:6 / 7; grid-row:3 / 4; }
 
+  .info-page{
+    position:fixed; inset:0; z-index:60; overflow:auto;
+    padding:36px clamp(20px,5vw,72px);
+    color:var(--text-main);
+    background:radial-gradient(ellipse 900px 500px at 50% 0%, rgba(60,50,40,0.35), transparent 60%), var(--bg-room);
+  }
+  .info-page[hidden], .info-power-button[hidden]{ display:none; }
+  .info-page-shell{ max-width:1240px; min-height:100%; margin:0 auto; }
+  .info-page-header{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:34px; }
+  .info-back{
+    display:inline-flex; align-items:center; gap:9px; min-height:44px;
+    padding:9px 14px; border:1px solid rgba(255,255,255,0.12); border-radius:10px;
+    background:rgba(255,255,255,0.06); color:var(--text-main); font:600 13px 'Inter',sans-serif; cursor:pointer;
+  }
+  .info-back svg{ width:18px; height:18px; }
+  .info-category-label{ color:var(--accent-gold); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; }
+  .info-page-title{ margin:8px 0 26px; font:500 38px 'Fraunces',serif; }
+  .info-power-button{ margin:0 0 22px; }
+  .info-entry-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr)); gap:18px; }
+  .info-entry-card{
+    display:flex; flex-direction:column; overflow:hidden; padding:0; text-align:left;
+    border:1px solid rgba(255,255,255,0.1); border-radius:10px;
+    background:linear-gradient(160deg,var(--panel-bg-2),var(--panel-bg)); color:var(--text-main);
+    cursor:pointer; transition:transform .18s ease,border-color .18s ease;
+  }
+  .info-entry-card:hover,.info-entry-card:focus-visible{ transform:translateY(-2px); border-color:rgba(201,164,105,0.55); outline:none; }
+  .info-entry-card img{ display:block; width:100%; aspect-ratio:16 / 9; object-fit:cover; background:rgba(255,255,255,0.04); }
+  .info-entry-copy{ padding:17px; }
+  .info-entry-title{ margin:0 0 7px; font:500 21px 'Fraunces',serif; }
+  .info-entry-subtitle{ margin:0 0 8px; color:var(--accent-gold); font-size:12px; }
+  .info-entry-description{ margin:0; color:var(--text-muted); font-size:13px; line-height:1.6; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+  .info-article{ max-width:900px; margin:0 auto; }
+  .info-article-image{ display:block; width:100%; max-height:55vh; aspect-ratio:16 / 8; object-fit:cover; border-radius:10px; margin:0 0 24px; }
+  .info-article-title{ margin:0 0 10px; font:500 36px 'Fraunces',serif; }
+  .info-article-subtitle{ margin:0 0 20px; color:var(--accent-gold); font-size:15px; }
+  .info-article-body{ color:var(--text-muted); font-size:16px; line-height:1.8; white-space:pre-wrap; }
+  .info-empty{ padding:32px 0; color:var(--text-muted); font-size:15px; }
+
+  @media(max-width:600px){
+    .info-page{ padding:22px 16px; }
+    .info-page-header{ margin-bottom:26px; }
+    .info-page-title{ font-size:30px; }
+    .info-article-title{ font-size:28px; }
+    .info-article-body{ font-size:14px; }
+  }
+
   footer.hint{
     text-align:center;
     color:#6b6577;
@@ -472,6 +518,22 @@
   </div>
 </div>
 
+<main class="info-page" id="infoPage" hidden>
+  <div class="info-page-shell">
+    <header class="info-page-header">
+      <button class="info-back" id="infoBackButton" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m15 18-6-6 6-6M9 12h12"/></svg>
+        <span id="infoBackLabel">Početna</span>
+      </button>
+      <div class="brand-name"><span id="infoHotelName"></span></div>
+    </header>
+    <p class="info-category-label" id="infoCategoryLabel"></p>
+    <h1 class="info-page-title" id="infoPageTitle"></h1>
+    <button class="btn-pow btn-pow-primary info-power-button" id="infoPowerButton" type="button" hidden>Pokreni POWER TV</button>
+    <section class="info-entry-grid" id="infoPageContent" aria-live="polite"></section>
+  </div>
+</main>
+
 <!-- POWER TV fallback modal (shown if app not installed / na desktopu) -->
 <div class="power-modal" id="powerModal" aria-hidden="true">
   <div class="power-card" role="dialog" aria-modal="true" aria-labelledby="powerModalTitle">
@@ -575,6 +637,20 @@
     'radio': 'radio'
   };
 
+  const tileToAdminCategory = Object.fromEntries(
+    Object.entries(adminToTileKey).map(([adminKey, tileKey]) => [tileKey, adminKey]),
+  );
+  const infoCategoryLabels = {
+    hotelinfo: 'Hotelske informacije',
+    marketing: 'Marketing',
+    restorani: 'Restorani i barovi',
+    wellness: 'Wellness & beauty centri',
+    sport: 'Sportske aktivnosti',
+    okolica: 'Zanimljivosti u okolici',
+    tv: 'TV kanali',
+    radio: 'Radio stanice',
+  };
+
   // Build infoMap from admin data
   async function buildInfoMap() {
     const infoMap = {};
@@ -648,23 +724,168 @@
 
   let infoMap = {};
 
+  function setInfoRoute(category, articleId = null) {
+    const target = new URL(window.location.href);
+    if (category) {
+      target.searchParams.set('category', category);
+      if (articleId) target.searchParams.set('article', articleId);
+      else target.searchParams.delete('article');
+    } else {
+      target.searchParams.delete('category');
+      target.searchParams.delete('article');
+    }
+    window.history.pushState({}, '', target);
+    renderInfoPage();
+  }
+
   const openInfoPage = (key) => {
-    const target = new URL('tv-info.html', window.location.href);
-    target.searchParams.set('item', key);
-    const params = new URLSearchParams(window.location.search);
-    ['guest', 'room'].forEach((name) => {
-      if (params.has(name)) target.searchParams.set(name, params.get(name));
-    });
-    window.location.href = target.toString();
+    const category = tileToAdminCategory[key] || key;
+    if (infoCategoryLabels[category]) setInfoRoute(category);
   };
 
-  const handleTileActivate = (key, tileEl) => {
-    // TV pločica → pokreni POWER TV aplikaciju, ne tv-info
-    if(key === 'tv'){
-      launchPowerTV();
-    } else {
-      openInfoPage(key);
+  function entryTitle(entry) {
+    return entry.title || entry.name || 'Sadržaj';
+  }
+
+  function createEntryCard(entry, category) {
+    const card = document.createElement('button');
+    card.className = 'info-entry-card';
+    card.type = 'button';
+
+    if (entry.image) {
+      const image = document.createElement('img');
+      image.src = entry.image;
+      image.alt = entryTitle(entry);
+      card.appendChild(image);
     }
+
+    const copy = document.createElement('div');
+    copy.className = 'info-entry-copy';
+    const title = document.createElement('h2');
+    title.className = 'info-entry-title';
+    title.textContent = entryTitle(entry);
+    copy.appendChild(title);
+
+    if (entry.subtitle) {
+      const subtitle = document.createElement('p');
+      subtitle.className = 'info-entry-subtitle';
+      subtitle.textContent = entry.subtitle;
+      copy.appendChild(subtitle);
+    }
+
+    const description = document.createElement('p');
+    description.className = 'info-entry-description';
+    description.textContent = entry.description || entry.value || '';
+    copy.appendChild(description);
+    card.appendChild(copy);
+    card.addEventListener('click', () => setInfoRoute(category, entry.id));
+    return card;
+  }
+
+  function renderArticle(entry) {
+    const article = document.createElement('article');
+    article.className = 'info-article';
+
+    if (entry.image) {
+      const image = document.createElement('img');
+      image.className = 'info-article-image';
+      image.src = entry.image;
+      image.alt = entryTitle(entry);
+      article.appendChild(image);
+    }
+
+    const title = document.createElement('h2');
+    title.className = 'info-article-title';
+    title.textContent = entryTitle(entry);
+    article.appendChild(title);
+
+    if (entry.subtitle) {
+      const subtitle = document.createElement('p');
+      subtitle.className = 'info-article-subtitle';
+      subtitle.textContent = entry.subtitle;
+      article.appendChild(subtitle);
+    }
+
+    const body = document.createElement('p');
+    body.className = 'info-article-body';
+    body.textContent = entry.description || entry.value || '';
+    article.appendChild(body);
+    return article;
+  }
+
+  let infoPageRequest = 0;
+  async function renderInfoPage() {
+    const params = new URLSearchParams(window.location.search);
+    const category = params.get('category');
+    const articleId = params.get('article');
+    const infoPage = document.getElementById('infoPage');
+    const infoPowerButton = document.getElementById('infoPowerButton');
+
+    if (!category || !infoCategoryLabels[category]) {
+      infoPage.hidden = true;
+      document.querySelector('.tv-frame').style.display = '';
+      return;
+    }
+
+    document.querySelector('.tv-frame').style.display = 'none';
+    infoPage.hidden = false;
+    document.getElementById('infoHotelName').textContent = document.getElementById('hotelName').textContent;
+    document.getElementById('infoCategoryLabel').textContent = infoCategoryLabels[category];
+    document.getElementById('infoPageTitle').textContent = articleId ? 'Članak' : 'Svi članci';
+    document.getElementById('infoBackLabel').textContent = articleId ? 'Svi članci' : 'Početna';
+    infoPowerButton.hidden = category !== 'tv' || Boolean(articleId);
+
+    const content = document.getElementById('infoPageContent');
+    content.className = 'info-entry-grid';
+    content.replaceChildren();
+    const loading = document.createElement('p');
+    loading.className = 'info-empty';
+    loading.textContent = 'Učitavanje članaka…';
+    content.appendChild(loading);
+
+    const requestId = ++infoPageRequest;
+    const entries = await loadAdminEntries(category);
+    if (requestId !== infoPageRequest) return;
+    content.replaceChildren();
+
+    if (articleId) {
+      const entry = entries.find((item) => String(item.id) === articleId);
+      if (entry) {
+        document.getElementById('infoPageTitle').textContent = entryTitle(entry);
+        content.className = '';
+        content.appendChild(renderArticle(entry));
+      } else {
+        const empty = document.createElement('p');
+        empty.className = 'info-empty';
+        empty.textContent = 'Članak nije pronađen.';
+        content.appendChild(empty);
+      }
+      return;
+    }
+
+    document.getElementById('infoPageTitle').textContent = 'Svi članci';
+    if (!entries.length) {
+      const empty = document.createElement('p');
+      empty.className = 'info-empty';
+      empty.textContent = 'Nema objavljenih članaka za ovu kategoriju.';
+      content.appendChild(empty);
+      return;
+    }
+
+    entries.forEach((entry) => content.appendChild(createEntryCard(entry, category)));
+  }
+
+  document.getElementById('infoBackButton').addEventListener('click', () => {
+    const params = new URLSearchParams(window.location.search);
+    const category = params.get('category');
+    if (params.has('article')) setInfoRoute(category);
+    else setInfoRoute(null);
+  });
+  document.getElementById('infoPowerButton').addEventListener('click', launchPowerTV);
+  window.addEventListener('popstate', renderInfoPage);
+
+  const handleTileActivate = (key, tileEl) => {
+    openInfoPage(key);
     if(tileEl?.animate){
       tileEl.animate(
         [{ transform: 'scale(1)' }, { transform: 'scale(0.97)' }, { transform: 'scale(1)' }],
@@ -744,6 +965,7 @@
   }
 
   initializeTiles();
+  renderInfoPage();
   setInterval(initializeTiles, 1000 * 30);
 </script>
 
