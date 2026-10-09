@@ -8,6 +8,10 @@ function getAdminIdentity(username) {
   return `${normalizedUsername}@admins.bookroom.local`
 }
 
+function isUuid(value) {
+  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
 function assertSupabaseConfig() {
   if (!supabase) {
     throw new Error('Supabase konfiguracija nije validna. Provjeri VITE_SUPABASE_URL i VITE_SUPABASE_ANON_KEY u .env datoteci.')
@@ -240,7 +244,7 @@ export async function saveModuleEntries(moduleName, entries) {
   const ids = currentRows.data.map((row) => row.id)
 
   const upserts = entries.map((entry, index) => ({
-    id: entry.id || crypto.randomUUID(),
+    id: isUuid(entry.id) ? entry.id : crypto.randomUUID(),
     hotel_id: hotelId,
     module_name: moduleName,
     title: entry.title || null,
