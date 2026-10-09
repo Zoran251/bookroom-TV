@@ -1,10 +1,5 @@
 import { supabase } from './supabase.js'
 
-const STORAGE_KEYS = {
-  module: 'tile:',
-  bookings: 'bookings',
-}
-
 function getAdminIdentity(username) {
   const normalizedUsername = username.trim().toLowerCase()
   if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(normalizedUsername)) {
@@ -204,10 +199,7 @@ export async function subscribeToCommand(commandId, onChange) {
 }
 
 export async function loadModuleEntries(moduleName) {
-  if (!supabase) {
-    const data = await storage.get(`${STORAGE_KEYS.module}${moduleName}`, true)
-    return data && data.value ? JSON.parse(data.value) : []
-  }
+  assertSupabaseConfig()
 
   const hotelId = await getHotelId()
 
@@ -233,10 +225,7 @@ export async function loadModuleEntries(moduleName) {
 }
 
 export async function saveModuleEntries(moduleName, entries) {
-  if (!supabase) {
-    await storage.set(`${STORAGE_KEYS.module}${moduleName}`, JSON.stringify(entries), true)
-    return
-  }
+  assertSupabaseConfig()
 
   const hotelId = await getHotelId()
 
@@ -277,10 +266,7 @@ export async function saveModuleEntries(moduleName, entries) {
 }
 
 export async function loadBookings() {
-  if (!supabase) {
-    const data = await storage.get(STORAGE_KEYS.bookings, true)
-    return data && data.value ? JSON.parse(data.value) : []
-  }
+  assertSupabaseConfig()
 
   const hotelId = await getHotelId()
 
@@ -303,10 +289,7 @@ export async function loadBookings() {
 }
 
 export async function saveBookings(entries) {
-  if (!supabase) {
-    await storage.set(STORAGE_KEYS.bookings, JSON.stringify(entries), true)
-    return
-  }
+  assertSupabaseConfig()
 
   const hotelId = await getHotelId()
 

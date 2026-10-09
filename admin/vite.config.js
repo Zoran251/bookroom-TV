@@ -5,6 +5,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   root: '..',
+  envDir: './admin',
   build: {
     outDir: 'admin-deploy',
     emptyOutDir: true,
