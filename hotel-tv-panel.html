@@ -940,7 +940,8 @@
   window.addEventListener('popstate', renderInfoPage);
 
   const handleTileActivate = (key, tileEl) => {
-    openInfoPage(key);
+    if (key === 'tv') launchPowerTV();
+    else openInfoPage(key);
     if(tileEl?.animate){
       tileEl.animate(
         [{ transform: 'scale(1)' }, { transform: 'scale(0.97)' }, { transform: 'scale(1)' }],
