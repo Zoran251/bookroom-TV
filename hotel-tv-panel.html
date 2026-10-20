@@ -548,7 +548,7 @@
     <p id="powerModalText">Aplikacija <b id="modalAppName">POWER TV</b> nije pokrenuta.<br>Na Android TV-u provjeri da je instalirana (<code id="modalPackageId"></code>). Na računaru možeš preuzeti APK.</p>
     <div class="power-actions">
       <a class="btn-pow btn-pow-primary" id="powerDownloadBtn" href="power-tv.apk" download>⬇ Preuzmi APK</a>
-      <button class="btn-pow btn-pow-ghost" type="button" id="powerInfoBtn">Otvori listu kanala</button>
+      <button class="btn-pow btn-pow-ghost" type="button" id="powerInfoBtn">Otvori TV sadržaj u HTML-u</button>
       <button class="btn-pow btn-pow-ghost" type="button" id="powerCloseBtn">Zatvori</button>
     </div>
   </div>
@@ -940,7 +940,10 @@
   window.addEventListener('popstate', renderInfoPage);
 
   const handleTileActivate = (key, tileEl) => {
-    if (key === 'tv') launchPowerTV();
+    if (key === 'tv') {
+      if (window.HotelTvAndroid && typeof window.HotelTvAndroid.openPowerTv === 'function') launchPowerTV();
+      else openInfoPage('tv');
+    }
     else openInfoPage(key);
     if(tileEl?.animate){
       tileEl.animate(
