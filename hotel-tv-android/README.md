@@ -5,7 +5,7 @@ Ovo je Android TV omotac za postojece web stranice:
 - `hotel-tv-panel.html` je pocetna TV konzola.
 - `tv-info.html` se otvara unutar istog WebView-a kada korisnik izabere karticu.
 - Klik na TV karticu poziva native `HotelTvAndroid.openPowerTv()` bridge.
-- Native kod pokrece instalirani `com.flextv.livestore` preko `PackageManager`-a.
+- Native kod pokreće instalirani `power.bestapps.uk` preko `PackageManager`-a.
 
 ## Pokretanje
 

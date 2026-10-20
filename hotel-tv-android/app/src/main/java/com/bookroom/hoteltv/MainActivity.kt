@@ -11,7 +11,7 @@ import android.widget.Toast
 class MainActivity : Activity() {
     companion object {
         private const val TAG = "[HOTEL-TV]"
-        private const val POWER_TV_PACKAGE = "com.flextv.livestore"
+        private const val POWER_TV_PACKAGE = "power.bestapps.uk"
         private const val CONSOLE_URL = "https://bookroom-tv.vercel.app/hotel-tv-panel.html"
     }
 
