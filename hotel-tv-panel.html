@@ -400,10 +400,14 @@
   .info-entry-subtitle{ margin:0 0 8px; color:var(--accent-gold); font-size:12px; }
   .info-entry-description{ margin:0; color:var(--text-muted); font-size:13px; line-height:1.6; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
   .info-article{ max-width:900px; margin:0 auto; }
-  .info-article-image{ display:block; width:100%; max-height:55vh; aspect-ratio:16 / 8; object-fit:cover; border-radius:10px; margin:0 0 24px; }
+  .info-article-gallery{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:12px; margin-bottom:24px; }
+  .info-article-image{ display:block; width:100%; max-height:40vh; aspect-ratio:16 / 9; object-fit:cover; border-radius:10px; }
   .info-article-title{ margin:0 0 10px; font:500 36px 'Fraunces',serif; }
   .info-article-subtitle{ margin:0 0 20px; color:var(--accent-gold); font-size:15px; }
   .info-article-body{ color:var(--text-muted); font-size:16px; line-height:1.8; white-space:pre-wrap; }
+  .info-article-location{ margin:0 0 16px; color:var(--accent-gold); font-size:14px; }
+  .info-article-links{ display:flex; flex-wrap:wrap; gap:12px; margin:20px 0 0; padding:0; list-style:none; }
+  .info-article-links a{ color:var(--accent-gold); text-decoration:underline; text-underline-offset:3px; }
   .info-empty{ padding:32px 0; color:var(--text-muted); font-size:15px; }
 
   @media(max-width:600px){
@@ -747,14 +751,29 @@
     return entry.title || entry.name || 'Sadržaj';
   }
 
+  function entryImages(entry) {
+    const images = Array.isArray(entry.images) ? entry.images.filter(Boolean) : [];
+    return images.length ? images : (entry.image ? [entry.image] : []);
+  }
+
+  function safeExternalUrl(value) {
+    try {
+      const url = new URL(value, window.location.href);
+      return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
   function createEntryCard(entry, category) {
     const card = document.createElement('button');
     card.className = 'info-entry-card';
     card.type = 'button';
 
-    if (entry.image) {
+    const imageUrl = entryImages(entry)[0];
+    if (imageUrl) {
       const image = document.createElement('img');
-      image.src = entry.image;
+      image.src = imageUrl;
       image.alt = entryTitle(entry);
       card.appendChild(image);
     }
@@ -786,12 +805,18 @@
     const article = document.createElement('article');
     article.className = 'info-article';
 
-    if (entry.image) {
-      const image = document.createElement('img');
-      image.className = 'info-article-image';
-      image.src = entry.image;
-      image.alt = entryTitle(entry);
-      article.appendChild(image);
+    const images = entryImages(entry);
+    if (images.length) {
+      const gallery = document.createElement('div');
+      gallery.className = 'info-article-gallery';
+      images.forEach((imageUrl) => {
+        const image = document.createElement('img');
+        image.className = 'info-article-image';
+        image.src = imageUrl;
+        image.alt = entryTitle(entry);
+        gallery.appendChild(image);
+      });
+      article.appendChild(gallery);
     }
 
     const title = document.createElement('h2');
@@ -806,10 +831,40 @@
       article.appendChild(subtitle);
     }
 
+    if (entry.location) {
+      const location = document.createElement('p');
+      location.className = 'info-article-location';
+      location.textContent = entry.location;
+      article.appendChild(location);
+    }
+
     const body = document.createElement('p');
     body.className = 'info-article-body';
     body.textContent = entry.description || entry.value || '';
     article.appendChild(body);
+
+    const links = Array.isArray(entry.links) ? entry.links : [];
+    const safeLinks = links.map((item) => {
+      const rawUrl = typeof item === 'string' ? item : item?.url;
+      const href = rawUrl && safeExternalUrl(rawUrl);
+      return href ? { href, label: (typeof item === 'string' ? rawUrl : item.label) || rawUrl } : null;
+    }).filter(Boolean);
+    if (safeLinks.length) {
+      const list = document.createElement('ul');
+      list.className = 'info-article-links';
+      safeLinks.forEach((item) => {
+        const listItem = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = item.href;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = item.label;
+        listItem.appendChild(link);
+        list.appendChild(listItem);
+      });
+      article.appendChild(list);
+    }
+
     return article;
   }
 

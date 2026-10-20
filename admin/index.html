@@ -159,6 +159,7 @@
   }
   .image-preview-info{ flex:1; font-size:12.5px; color:var(--text-muted); }
   .image-preview-info .fname{ color:var(--text-main); font-weight:600; margin-bottom:2px; word-break:break-all; }
+  .image-preview-list{ display:grid; gap:10px; margin-bottom:10px; }
  
   /* Bookings */
   .sidebar .divider{ height:1px; background:var(--border); margin:14px 6px; }
@@ -595,7 +596,7 @@ const CATEGORIES = [
   { id:'budjenje',   label:'Buđenje',                   type:'simple', sub:'Ponuđene opcije vremena za buđenje.', nameLabel:'Opis', valueLabel:'Vrijeme' },
 ];
  
-let state = { current: CATEGORIES[0].id, editingId: null, pendingImage: null };
+let state = { current: CATEGORIES[0].id, editingId: null, pendingImage: null, pendingImages: [] };
 
 async function renderHotelHeader(){
   document.getElementById('catTitle').textContent = 'Informacije zaglavlja';
@@ -968,6 +969,93 @@ async function handleImageInput(inputEl, previewWrapEl){
     previewWrapEl.innerHTML = `<div class="field-hint">Greška pri učitavanju slike, pokušaj ponovo.</div>`;
   }
 }
+
+async function handleMultipleImageInput(inputEl, previewWrapEl){
+  const files = Array.from(inputEl.files || []);
+  if(!files.length) return;
+  if(files.some(file => !file.type.startsWith('image/'))){
+    alert('Molimo odaberi samo fajlove slika (jpg, png, webp...).');
+    inputEl.value = '';
+    return;
+  }
+
+  previewWrapEl.querySelector('.multi-image-loading')?.remove();
+  const loading = document.createElement('div');
+  loading.className = 'field-hint multi-image-loading';
+  loading.textContent = 'Obrada slika…';
+  previewWrapEl.prepend(loading);
+  try{
+    const images = await Promise.all(files.map(async (file) => {
+      const rawDataUrl = await fileToDataUrl(file);
+      return compressImage(rawDataUrl);
+    }));
+    state.pendingImages = [...state.pendingImages, ...images];
+    renderMultipleImageField(previewWrapEl);
+  }catch(error){
+    loading.textContent = 'Greška pri učitavanju slika, pokušaj ponovo.';
+  }finally{
+    inputEl.value = '';
+  }
+}
+
+function renderMultipleImageField(wrapEl){
+  wrapEl.replaceChildren();
+  if(state.pendingImages.length){
+    const list = document.createElement('div');
+    list.className = 'image-preview-list';
+    state.pendingImages.forEach((image, index) => {
+      const preview = document.createElement('div');
+      preview.className = 'image-preview-wrap';
+      const thumbnail = document.createElement('div');
+      thumbnail.className = 'image-preview';
+      thumbnail.style.backgroundImage = `url("${image}")`;
+      const info = document.createElement('div');
+      info.className = 'image-preview-info';
+      const fileName = document.createElement('div');
+      fileName.className = 'fname';
+      fileName.textContent = `Slika ${index + 1}`;
+      const size = document.createElement('div');
+      size.textContent = `~${Math.round((image.length * 0.75) / 1024)} KB nakon optimizacije`;
+      info.append(fileName, size);
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn btn-ghost btn-small';
+      remove.textContent = 'Ukloni';
+      remove.addEventListener('click', () => {
+        state.pendingImages = state.pendingImages.filter((_, imageIndex) => imageIndex !== index);
+        renderMultipleImageField(wrapEl);
+      });
+      preview.append(thumbnail, info, remove);
+      list.appendChild(preview);
+    });
+    wrapEl.appendChild(list);
+  }
+
+  const drop = document.createElement('div');
+  drop.className = 'image-drop';
+  drop.innerHTML = `
+    <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">${ICONS.image}</svg>
+    <div class="drop-text"><b>Dodaj slike</b><br>Možeš odabrati više JPG, PNG ili WEBP slika</div>
+    <input type="file" accept="image/*" multiple>`;
+  drop.querySelector('input').addEventListener('change', (event) => handleMultipleImageInput(event.target, wrapEl));
+  wrapEl.appendChild(drop);
+}
+
+function parseArticleLinks(value){
+  return value.split(/\r?\n/).map(link => link.trim()).filter(Boolean).map((link) => {
+    const candidate = /^https?:\/\//i.test(link) ? link : `https://${link}`;
+    const url = new URL(candidate);
+    if(url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('invalid link');
+    return url.href;
+  });
+}
+
+function formatArticleLinks(links){
+  return (Array.isArray(links) ? links : [])
+    .map(link => typeof link === 'string' ? link : link?.url)
+    .filter(Boolean)
+    .join('\n');
+}
  
 function renderImagePreview(wrapEl, dataUrl, fileName){
   const sizeKb = Math.round((dataUrl.length * 0.75) / 1024);
@@ -999,10 +1087,11 @@ function renderImageDrop(wrapEl){
 async function openModal(cat, entryId){
   state.editingId = entryId || null;
   state.pendingImage = null;
+  state.pendingImages = [];
   document.getElementById('modalTitle').textContent = entryId ? 'Uredi unos' : 'Novi unos';
   const fields = document.getElementById('formFields');
  
-  let entry = { id: null, title:'', subtitle:'', description:'', image:'', name:'', value:'' };
+  let entry = { id: null, title:'', subtitle:'', description:'', image:'', images:[], location:'', links:[], name:'', value:'' };
   if(entryId){
     const entries = await loadCategory(cat.id);
     entry = entries.find(e => e.id === entryId) || entry;
@@ -1036,13 +1125,26 @@ async function openModal(cat, entryId){
         <div class="field"><label>Podnaslov (opciono)</label><input id="f_subtitle" value="${escapeAttr(entry.subtitle||'')}" placeholder="npr. Otvoreno 07:00–22:00"></div>
         <div class="field"><label>Opis</label><textarea id="f_description" placeholder="Kratak opis koji vidi gost...">${entry.description||''}</textarea></div>
         <div class="field">
-          <label>Slika</label>
+          <label>Slike (opciono)</label>
           <div id="imageFieldWrap"></div>
+        </div>
+        <div class="field"><label>Lokacija (opciono)</label><input id="f_location" value="${escapeAttr(entry.location||'')}" placeholder="npr. Sarajevo, BiH"></div>
+        <div class="field">
+          <label>Linkovi (opciono)</label>
+          <textarea id="f_links" placeholder="Unesi po jedan URL u svakom redu...">${escapeHtml(formatArticleLinks(entry.links))}</textarea>
+          <div class="field-hint">Linkovi će biti prikazani uz članak.</div>
         </div>`;
     }
     const wrap = document.getElementById('imageFieldWrap');
-    if(entry.image){ renderImagePreview(wrap, entry.image, 'trenutna slika'); }
-    else { renderImageDrop(wrap); }
+    if(cat.id === 'account' || cat.id === 'marketing'){
+      if(entry.image){ renderImagePreview(wrap, entry.image, 'trenutna slika'); }
+      else { renderImageDrop(wrap); }
+    } else {
+      state.pendingImages = Array.isArray(entry.images) && entry.images.length
+        ? [...entry.images]
+        : (entry.image ? [entry.image] : []);
+      renderMultipleImageField(wrap);
+    }
   } else {
     fields.innerHTML = `
       <div class="field"><label>${cat.nameLabel}</label><input id="f_name" value="${escapeAttr(entry.name||'')}" placeholder="npr. ${cat.id==='tv'?'RTS 1':cat.id==='radio'?'Radio Sarajevo':'07:00'}"></div>
@@ -1057,6 +1159,7 @@ function closeModal(){
   document.getElementById('overlay').classList.remove('open');
   state.editingId = null;
   state.pendingImage = null;
+  state.pendingImages = [];
 }
  
 async function saveEntry(cat){
@@ -1094,12 +1197,23 @@ async function saveEntry(cat){
         notes: document.getElementById('f_description').value.trim(),
       };
     } else {
+      let links;
+      try{
+        links = parseArticleLinks(document.getElementById('f_links').value);
+      }catch(error){
+        alert('Unesi ispravne linkove sa adresom web stranice (http:// ili https://).');
+        return;
+      }
+      const images = [...state.pendingImages];
       entry = {
         id: state.editingId || 'e_' + Date.now(),
         title,
         subtitle: document.getElementById('f_subtitle').value.trim(),
         description: document.getElementById('f_description').value.trim(),
-        image: state.pendingImage || '',
+        image: images[0] || '',
+        images,
+        location: document.getElementById('f_location').value.trim(),
+        links,
       };
     }
   } else {
