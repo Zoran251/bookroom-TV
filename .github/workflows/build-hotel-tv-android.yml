@@ -5,6 +5,10 @@ on:
   push:
     paths:
       - "hotel-tv-android/**"
+      - "admin/**"
+      - "hotel-tv-panel.html"
+      - "tv-info.html"
+      - "index.html"
       - ".github/workflows/build-hotel-tv-android.yml"
 
 jobs:
@@ -17,6 +21,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: admin
+        run: npm ci
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -35,8 +50,11 @@ jobs:
         with:
           gradle-version: "8.7"
 
-      - name: Build debug APK
+      - name: Build Android TV application with local console assets
         run: gradle assembleDebug --no-daemon
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Upload Hotel TV APK
         uses: actions/upload-artifact@v4

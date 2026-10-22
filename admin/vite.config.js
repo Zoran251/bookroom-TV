@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   root: '..',
   envDir: './admin',
+  base: process.env.VITE_BASE_PATH || '/',
   build: {
     outDir: 'admin-deploy',
     emptyOutDir: true,
