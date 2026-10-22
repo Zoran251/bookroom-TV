@@ -92,7 +92,7 @@ class MainActivity : Activity() {
                 if (launchIntent == null) {
                     android.util.Log.e(TAG, "Power TV package not found")
                     Toast.makeText(
-                        this,
+                        this@MainActivity,
                         "Power TV nije instaliran na ovom TV uređaju.",
                         Toast.LENGTH_LONG,
                     ).show()
@@ -106,7 +106,7 @@ class MainActivity : Activity() {
                 } catch (error: Exception) {
                     android.util.Log.e(TAG, "Failed to launch Power TV", error)
                     Toast.makeText(
-                        this,
+                        this@MainActivity,
                         "Power TV se ne može pokrenuti.",
                         Toast.LENGTH_LONG,
                     ).show()
