@@ -940,10 +940,7 @@
   window.addEventListener('popstate', renderInfoPage);
 
   const handleTileActivate = (key, tileEl) => {
-    if (key === 'tv') {
-      if (window.HotelTvAndroid && typeof window.HotelTvAndroid.openPowerTv === 'function') launchPowerTV();
-      else openInfoPage('tv');
-    }
+    if (key === 'tv') launchPowerTV();
     else openInfoPage(key);
     if(tileEl?.animate){
       tileEl.animate(
