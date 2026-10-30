@@ -545,17 +545,15 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>
     </div>
     <h3 id="powerModalTitle">POWER TV</h3>
-    <p id="powerModalText">Aplikacija <b id="modalAppName">POWER TV</b> nije pokrenuta.<br>Na Android TV-u provjeri da je instalirana (<code id="modalPackageId"></code>). Na računaru možeš preuzeti APK.</p>
+    <p id="powerModalText">POWER TV (<code id="modalPackageId">power.bestapps.uk</code>) nije pokrenut. Na Windowsu registruj lokalni BlueStacks launcher jednom, pa ponovo pokušaj.</p>
     <div class="power-actions">
       <a class="btn-pow btn-pow-primary" id="powerDownloadBtn" href="power-tv.apk" download>⬇ Preuzmi APK</a>
+      <a class="btn-pow btn-pow-ghost" id="powerBlueStacksBtn" href="bookroom-power-tv://launch">Pokreni POWER TV u BlueStacks-u</a>
       <button class="btn-pow btn-pow-ghost" type="button" id="powerInfoBtn">Otvori TV sadržaj u HTML-u</button>
       <button class="btn-pow btn-pow-ghost" type="button" id="powerCloseBtn">Zatvori</button>
     </div>
   </div>
 </div>
-
-<div id="modalAppName" style="display:none;"></div>
-<div id="modalPackageId" style="display:none;"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
@@ -687,6 +685,7 @@
   // ---- POWER TV app launch ----
   const POWER_TV_PACKAGE = 'power.bestapps.uk';
   const POWER_TV_APK_URL = 'power-tv.apk';
+  const POWER_TV_DESKTOP_URL = 'bookroom-power-tv://launch';
 
   // Read Android app config from localStorage (set via Admin panel)
   async function loadPowerTvConfig(){
@@ -709,15 +708,21 @@
     if(modal) { modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
   }
 
-  async function launchPowerTV(){
+  function launchPowerTV(){
     if (window.HotelTvAndroid && typeof window.HotelTvAndroid.openPowerTv === 'function') {
       window.HotelTvAndroid.openPowerTv();
       return;
     }
 
-    const config = await loadPowerTvConfig();
+    window.location.href = POWER_TV_DESKTOP_URL;
+
+    loadPowerTvConfig().then((config) => {
+      const packageId = document.getElementById('modalPackageId');
+      const downloadLink = document.getElementById('powerDownloadBtn');
+      if (packageId) packageId.textContent = config.package;
+      if (downloadLink) downloadLink.href = config.apkUrl;
+    });
     showPowerTvFallback();
-    console.info('[POWER TV] Native Hotel TV app is required to launch:', config.package);
   }
 
   // Modal wiring

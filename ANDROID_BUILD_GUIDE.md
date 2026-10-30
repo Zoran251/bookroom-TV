@@ -108,6 +108,24 @@ signing key isti. Deinstalacija briše lokalne podatke aplikacije. APK bez potpi
 potpisan drugim ključem ne može ažurirati postojeću instalaciju; ne uklanjaj staru
 instalaciju dok ne potvrdiš da imaš odgovarajući ključ i backup podataka.
 
+## Pokretanje POWER TV-a u BlueStacks-u na Windowsu
+
+Android aplikacija pokreće POWER TV preko native Android bridge-a. Običan Windows
+browser ne može direktno izvršiti lokalni `.exe`; za to je potreban Windows URL
+protocol handler. Ako želiš da TV ikona u browseru pokrene POWER TV u BlueStacks-u,
+pokreni jednom iz PowerShella, iz root foldera repozitorija:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install-bluestacks-power-tv-protocol.ps1
+```
+
+Skripta registruje `bookroom-power-tv://` samo za trenutnog Windows korisnika u HKCU.
+Koristi postojeći BlueStacks `HD-Player.exe`, instancu `Pie64` i Android paket
+`power.bestapps.uk`; ne instalira APK, ne mijenja Android signing i ne zahtijeva
+administratorska prava. Ako BlueStacks koristi drugu instalacijsku putanju ili
+instancu, prilagodi skriptu prije pokretanja. Nakon registracije zatvori i ponovo
+otvori browser, pa klikni TV ikonu i odobri browserov prompt za otvaranje BlueStacks-a.
+
 ## Lokalni build bez Android Studija
 
 Instaliraj JDK 17 i Android SDK Platform 35 / Build-Tools 35.0.0. Android Studio nije
