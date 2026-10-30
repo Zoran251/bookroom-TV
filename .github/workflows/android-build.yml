@@ -1,0 +1,165 @@
+name: Android TV APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and verify release APK
+    runs-on: ubuntu-latest
+    outputs:
+      signing-configured: ${{ steps.signing.outputs.configured }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare release signing
+        id: signing
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          secrets_count=0
+          for value in \
+            "$ANDROID_KEYSTORE_BASE64" \
+            "$ANDROID_KEYSTORE_PASSWORD" \
+            "$ANDROID_KEY_ALIAS" \
+            "$ANDROID_KEY_PASSWORD"; do
+            if [[ -n "$value" ]]; then
+              secrets_count=$((secrets_count + 1))
+            fi
+          done
+
+          if [[ "$secrets_count" -eq 4 ]]; then
+            keystore_path="$RUNNER_TEMP/hotel-tv-release.keystore"
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+            test -s "$keystore_path"
+            echo "keystore_path=$keystore_path" >> "$GITHUB_OUTPUT"
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "Release signing is configured."
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            if [[ "$secrets_count" -gt 0 ]]; then
+              echo "::warning::Signing secrets are incomplete. This build will be unsigned."
+            else
+              echo "::warning::Signing secrets are not configured. This build will be unsigned and is not ready for distribution."
+            fi
+          fi
+
+      - name: Build release APK
+        working-directory: hotel-tv-android
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ steps.signing.outputs.keystore_path }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          BUILD_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" == v* ]]; then
+            app_version_name="${GITHUB_REF_NAME#v}"
+          else
+            app_version_name="1.2.0"
+          fi
+          app_version_code=$((10000 + BUILD_RUN_NUMBER))
+
+          bash ./gradlew --no-daemon assembleRelease \
+            -PappVersionName="$app_version_name" \
+            -PappVersionCode="$app_version_code"
+
+      - name: Name and validate APK
+        id: package-apk
+        shell: bash
+        env:
+          SIGNING_CONFIGURED: ${{ steps.signing.outputs.configured }}
+        run: |
+          output_dir="hotel-tv-android/app/build/outputs/apk/release"
+          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" == v* ]]; then
+            version_label="$GITHUB_REF_NAME"
+          else
+            version_label="build-${GITHUB_RUN_NUMBER}"
+          fi
+
+          if [[ "$SIGNING_CONFIGURED" == "true" ]]; then
+            apk_source="$output_dir/app-release.apk"
+            apk_name="Hotel-TV-${version_label}.apk"
+          else
+            apk_source="$output_dir/app-release-unsigned.apk"
+            apk_name="Hotel-TV-${version_label}-UNSIGNED.apk"
+          fi
+
+          test -s "$apk_source"
+          apk_path="$output_dir/$apk_name"
+          cp "$apk_source" "$apk_path"
+          unzip -t "$apk_path" >/dev/null
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk_path" |
+            grep -q "package: name='com.bookroom.hoteltv'"
+
+          if [[ "$SIGNING_CONFIGURED" == "true" ]]; then
+            "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk_path"
+          else
+            echo "::warning::The APK is unsigned and cannot update a previously signed installation."
+          fi
+
+          echo "path=$apk_path" >> "$GITHUB_OUTPUT"
+          echo "name=$apk_name" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hotel-tv-release-apk
+          path: ${{ steps.package-apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Publish tagged GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified APK
+        uses: actions/download-artifact@v4
+        with:
+          name: hotel-tv-release-apk
+          path: release-assets
+
+      - name: Publish tagged GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Hotel TV ${{ github.ref_name }}
+          files: release-assets/*.apk
+          fail_on_unmatched_files: true
+          body: |
+            Hotel TV Android TV release ${{ github.ref_name }}.
+
+            ${{ needs.build.outputs.signing-configured == 'true' && 'The APK is signed and can update an installation signed with the same keystore.' || 'WARNING: This APK is UNSIGNED and is not ready for distribution. Configure all Android signing secrets and rerun this tag to publish a signed APK.' }}

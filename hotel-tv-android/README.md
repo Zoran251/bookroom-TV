@@ -1,49 +1,24 @@
-# Hotel TV Android TV aplikacija
+# Hotel TV Android TV app
 
-Android aplikacija sadrži lokalnu produkcionu kopiju TV konzole. Pri Gradle buildu
-pokreće se Vite build, a HTML, JavaScript, stilovi i ostali web resursi iz `admin-deploy`
-pakiraju se u APK. Konzola se otvara iz APK-a preko `WebViewAssetLoader`, ne preuzima se
-sa laptopa niti zahtijeva Vercel da bi se otvorio početni ekran.
+The existing Kotlin app loads the production console at
+`https://bookroom-tv.vercel.app/hotel-tv-panel.html` in Android WebView. Supabase
+continues to provide the existing online data synchronization, and the TV tile launches
+the installed POWER TV package `power.bestapps.uk`.
 
-## Supabase konfiguracija
+The project keeps its existing `com.bookroom.hoteltv` application ID. Android TV and
+Google TV launcher metadata, a TV banner, a launcher icon, immersive display, D-pad
+focus, network error/retry feedback, and Android Back navigation are configured in the
+existing app module.
 
-Konzola koristi isti Supabase projekat kao web verzija. Prije lokalnog builda postavi
-`VITE_SUPABASE_URL` i `VITE_SUPABASE_ANON_KEY` u `admin/.env` (kopiraj
-`admin/.env.example`) ili ih proslijedi kao environment varijable. Vite ih ugrađuje u
-lokalni web bundle. APK zato sadrži javni Supabase anon ključ; nikad ne koristi service
-role ključ i ne dodaj `.env` u Git.
+## Build without Android Studio
 
-Na GitHub Actions postavi repository secrets `VITE_SUPABASE_URL` i
-`VITE_SUPABASE_ANON_KEY` kako bi CI mogao napraviti APK.
-
-## Lokalni build
-
-Potrebni su Node.js 22, Java 17, Android SDK 35 i Gradle 8.7.
+Install JDK 17 and Android SDK Platform 35 plus Build-Tools 35.0.0. From this directory,
+run:
 
 ```powershell
-cd admin
-npm ci
-cd ../hotel-tv-android
-gradle assembleDebug
+.\gradlew.bat assembleRelease
 ```
 
-Alternativno, otvori folder `hotel-tv-android` u Android Studio i pokreni Gradle task
-`assembleDebug` nakon jednokratne instalacije web zavisnosti:
-
-```powershell
-cd admin
-npm ci
-```
-
-Gradle automatski izgradi web konzolu i uključi njene fajlove u aplikaciju. APK se
-nalazi na `app/build/outputs/apk/debug/app-debug.apk`. Instaliraj ga na Android TV
-zajedno s POWER TV aplikacijom (`power.bestapps.uk`).
-
-## GitHub Actions build
-
-Workflow `Build Hotel TV Android APK` pravi APK pri pushu Android/web izmjena ili ručnim
-pokretanjem. Preuzmi `hotel-tv-debug-apk` iz artifacts sekcije završenog workflow runa.
-
-Kada je internet dostupan, Android konzola učitava aktuelne podatke iz Supabase-a.
-Početni HTML i web resursi su lokalni u APK-u. TV ikona poziva Android bridge i pokreće
-instalirani POWER TV; pri povratku se nastavlja Hotel TV konzola.
+The first wrapper run downloads the pinned Gradle 8.7 distribution and verifies its
+SHA-256 checksum. By default, the release APK is unsigned. For signing and GitHub
+Actions instructions, see [ANDROID_BUILD_GUIDE.md](../ANDROID_BUILD_GUIDE.md).

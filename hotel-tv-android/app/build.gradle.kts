@@ -3,52 +3,19 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-val repositoryRoot = rootProject.projectDir.parentFile
-val generatedConsoleAssets = layout.buildDirectory.dir("generated/consoleAssets")
-val isWindows = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
+val appVersionCode = providers.gradleProperty("appVersionCode").orNull?.toIntOrNull() ?: 3
+val appVersionName = providers.gradleProperty("appVersionName").orNull ?: "1.2.0"
 
-val buildConsoleWeb = tasks.register<Exec>("buildConsoleWeb") {
-    workingDir(repositoryRoot)
-    environment("VITE_BASE_PATH", "./")
-    commandLine(
-        if (isWindows) listOf("cmd", "/c", "npm", "--prefix", "admin", "run", "build")
-        else listOf("npm", "--prefix", "admin", "run", "build"),
-    )
-
-    doFirst {
-        val envFile = repositoryRoot.resolve("admin/.env")
-        val envContents = if (envFile.isFile) envFile.readText() else ""
-        val hasSupabaseUrl = !System.getenv("VITE_SUPABASE_URL").isNullOrBlank() ||
-            Regex("(?m)^VITE_SUPABASE_URL=.+$").containsMatchIn(envContents)
-        val hasSupabaseKey = !System.getenv("VITE_SUPABASE_ANON_KEY").isNullOrBlank() ||
-            Regex("(?m)^VITE_SUPABASE_ANON_KEY=.+$").containsMatchIn(envContents)
-
-        check(hasSupabaseUrl && hasSupabaseKey) {
-            "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in admin/.env or the build environment."
-        }
-    }
-}
-
-val prepareConsoleAssets = tasks.register<Sync>("prepareConsoleAssets") {
-    dependsOn(buildConsoleWeb)
-    from(repositoryRoot.resolve("admin-deploy"))
-    into(generatedConsoleAssets.map { it.dir("console") })
-    doFirst {
-        val consoleHtml = repositoryRoot.resolve("admin-deploy/hotel-tv-panel.html")
-        check(consoleHtml.isFile) {
-            "The built TV console was not found in admin-deploy."
-        }
-        val referencedAssets = Regex("""(?:src|href)=["']\./assets/([^"']+)["']""")
-            .findAll(consoleHtml.readText())
-            .map { it.groupValues[1] }
-            .toList()
-        check(referencedAssets.isNotEmpty() && referencedAssets.all {
-            repositoryRoot.resolve("admin-deploy/assets/$it").isFile
-        }) {
-            "The TV console build must use relative paths and include all referenced assets."
-        }
-    }
-}
+val signingStorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+val signingStorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+val signingKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+val signingKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+val releaseSigningAvailable = listOf(
+    signingStorePath,
+    signingStorePassword,
+    signingKeyAlias,
+    signingKeyPassword,
+).all { !it.isNullOrBlank() }
 
 android {
     namespace = "com.bookroom.hoteltv"
@@ -58,19 +25,31 @@ android {
         applicationId = "com.bookroom.hoteltv"
         minSdk = 23
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
 
-    sourceSets.getByName("main").assets.srcDir(generatedConsoleAssets)
-}
+    if (releaseSigningAvailable) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(requireNotNull(signingStorePath))
+                storePassword = requireNotNull(signingStorePassword)
+                keyAlias = requireNotNull(signingKeyAlias)
+                keyPassword = requireNotNull(signingKeyPassword)
+            }
+        }
+    }
 
-dependencies {
-    implementation("androidx.webkit:webkit:1.12.1")
-}
-
-tasks.named("preBuild").configure {
-    dependsOn(prepareConsoleAssets)
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = false
+            signingConfig = if (releaseSigningAvailable) {
+                signingConfigs.getByName("release")
+            } else {
+                null
+            }
+        }
+    }
 }
 
 kotlin {
