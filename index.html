@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#120f15" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <title>Bookroom TV — Izbor panela</title>
     <style>
       :root {
@@ -79,6 +83,27 @@
         box-shadow: 0 18px 30px rgba(0,0,0,0.25);
       }
 
+      .card:focus-visible,
+      .install-app:focus-visible {
+        outline: 4px solid var(--gold);
+        outline-offset: 5px;
+      }
+
+      .install-app {
+        display: block;
+        margin: 22px auto 0;
+        padding: 12px 20px;
+        border: 1px solid rgba(211,181,125,0.55);
+        border-radius: 12px;
+        background: rgba(211,181,125,0.12);
+        color: var(--text);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .install-app[hidden] { display: none; }
+
       .badge {
         display: inline-flex;
         align-items: center;
@@ -124,6 +149,8 @@
           <p>Pregled sadržaja za goste i prikaz aktivnog hotel screensaver/panela.</p>
         </a>
       </div>
+      <button class="install-app" id="installAppButton" type="button" hidden>Instaliraj Bookroom TV</button>
     </main>
+    <script src="/pwa-register.js"></script>
   </body>
 </html>

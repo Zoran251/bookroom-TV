@@ -18,6 +18,33 @@ konekcija ili produkcijska stranica nisu dostupni.
 - Release APK je potpisan samo ako su podešena sva četiri signing secreta; bez njih se
   pravi jasno označena unsigned APK datoteka.
 
+## POWER TV integracija
+
+Dostavljeni `power-tv.apk` analiziran je pomoću Android SDK `aapt` alata. Sadrži paket
+`power.bestapps.uk` (verzija 3.5), mobilnu launcher aktivnost
+`com.flextv.livestore.MainActivity` i Android TV launcher aktivnost
+`com.flextv.livestore.MainTVActivity`. APK deklarira `LEANBACK_LAUNCHER` i nema
+obaveznu touchscreen funkciju.
+
+TV ikonica u `hotel-tv-panel.html` poziva Android most `HotelTvAndroid.openPowerTv()`
+kada je stranica otvorena u Hotel TV Android aplikaciji. Native kod prvo traži POWER
+TV Android TV launcher aktivnost, pa koristi standardnu launcher aktivnost samo ako
+TV aktivnost nije dostupna. Hotel TV ostaje u Android pozadini; nakon povratka iz
+POWER TV-a njegov prethodni WebView ekran ostaje aktivan.
+
+Ako aplikacija nije instalirana, Hotel TV prikazuje poruku i čeka izbor korisnika.
+Opcija **Odaberi APK** otvara sistemski birač datoteka; nakon odabira APK-a Android
+prikazuje vlastitu potvrdu instalacije. Za instalaciju Android može tražiti da korisnik
+dozvoli instaliranje aplikacija iz izvora Hotel TV. Potrebna je deklaracija
+`REQUEST_INSTALL_PACKAGES` i eksplicitna saglasnost korisnika; aplikacija ne instalira
+APK automatski. APK treba prethodno prenijeti na TV, npr. na USB. Nije potrebno
+posebno odobrenje za samo pokretanje već instalirane POWER TV aplikacije.
+
+Lokalni `C:\Program Files\BlueStacks_nxt\HD-Player.exe` je Windows BlueStacks emulator,
+a ne Android aktivnost niti komponenta potrebna na Android TV-u. Windows browser i
+dalje koristi ranije podešeni BlueStacks protokol; ova native Android integracija ne
+otvara browser niti Windows program.
+
 ## GitHub Actions build
 
 Repozitorij trenutno koristi granu `master`. Workflow `.github/workflows/android-build.yml`
@@ -107,6 +134,18 @@ deinstaliranja**. Android će sačuvati WebView podatke kada su `applicationId` 
 signing key isti. Deinstalacija briše lokalne podatke aplikacije. APK bez potpisa ili
 potpisan drugim ključem ne može ažurirati postojeću instalaciju; ne uklanjaj staru
 instalaciju dok ne potvrdiš da imaš odgovarajući ključ i backup podataka.
+
+## Instalacija kao PWA
+
+Web aplikacija se može instalirati iz browsera koji podržava PWA instalaciju. Otvori
+`https://bookroom-tv.vercel.app/`, izaberi **Instaliraj Bookroom TV** ako se dugme
+pojavi ili koristi opciju instalacije u browser meniju. Početni ekran zadržava izbor
+Admin ili TV panela, a TV konzola i dalje podržava navigaciju daljinskim upravljačem.
+
+Podrška za PWA instalaciju zavisi od browsera na konkretnom Android TV / Google TV
+uređaju; ako browser ne nudi instalaciju, koristi Android APK opisanu iznad. PWA
+kešira samo aplikacijski okvir i statičke resurse, ne Supabase podatke. Za aktuelne
+hotelske podatke i dalje je potrebna internet veza.
 
 ## Pokretanje POWER TV-a u BlueStacks-u na Windowsu
 
