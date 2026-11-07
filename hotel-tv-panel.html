@@ -690,8 +690,7 @@
   // ---- POWER TV app launch ----
   const POWER_TV_PACKAGE = 'power.bestapps.uk';
   const POWER_TV_APK_URL = 'power-tv.apk';
-  const POWER_TV_DESKTOP_URL = 'bookroom-power-tv://launch';
-  const POWER_TV_ANDROID_INTENT = 'intent://launch#Intent;scheme=https;package=power.bestapps.uk;action=android.intent.action.MAIN;category=android.intent.category.LEANBACK_LAUNCHER;end';
+  const POWER_TV_ANDROID_INTENT = 'intent://#Intent;package=power.bestapps.uk;action=android.intent.action.MAIN;category=android.intent.category.LEANBACK_LAUNCHER;end';
 
   // Read Android app config from localStorage (set via Admin panel)
   async function loadPowerTvConfig(){
@@ -720,20 +719,7 @@
       return;
     }
 
-    if (/Android/i.test(navigator.userAgent)) {
-      window.location.href = POWER_TV_ANDROID_INTENT;
-      return;
-    }
-
-    window.location.href = POWER_TV_DESKTOP_URL;
-
-    loadPowerTvConfig().then((config) => {
-      const packageId = document.getElementById('modalPackageId');
-      const downloadLink = document.getElementById('powerDownloadBtn');
-      if (packageId) packageId.textContent = config.package;
-      if (downloadLink) downloadLink.href = config.apkUrl;
-    });
-    showPowerTvFallback();
+    window.location.href = POWER_TV_ANDROID_INTENT;
   }
 
   // Modal wiring
