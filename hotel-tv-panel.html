@@ -691,6 +691,7 @@
   const POWER_TV_PACKAGE = 'power.bestapps.uk';
   const POWER_TV_APK_URL = 'power-tv.apk';
   const POWER_TV_DESKTOP_URL = 'bookroom-power-tv://launch';
+  const POWER_TV_ANDROID_INTENT = 'intent://launch#Intent;scheme=https;package=power.bestapps.uk;action=android.intent.action.MAIN;category=android.intent.category.LEANBACK_LAUNCHER;end';
 
   // Read Android app config from localStorage (set via Admin panel)
   async function loadPowerTvConfig(){
@@ -716,6 +717,11 @@
   function launchPowerTV(){
     if (window.HotelTvAndroid && typeof window.HotelTvAndroid.openPowerTv === 'function') {
       window.HotelTvAndroid.openPowerTv();
+      return;
+    }
+
+    if (/Android/i.test(navigator.userAgent)) {
+      window.location.href = POWER_TV_ANDROID_INTENT;
       return;
     }
 
