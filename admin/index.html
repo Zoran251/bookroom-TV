@@ -648,7 +648,7 @@ async function renderHotelHeader(){
   }
 }
 
-async function renderTvPairings(generatedCode = ''){
+async function renderTvPairings(generatedCode = '', generatedRoom = ''){
   document.getElementById('catTitle').textContent = 'Uparivanje TV-a';
   document.getElementById('catSub').textContent = 'Poveži TV konzolu sa sobom da bi prikazivala podatke iz admin panela.';
   document.getElementById('addBtn').style.display = 'none';
@@ -679,14 +679,16 @@ async function renderTvPairings(generatedCode = ''){
             <div class="entry-sub">${pairing.revoked_at ? 'Uparivanje opozvano' : 'Aktivno uparivanje'}</div>
           </div>
           <div class="entry-actions">
-            ${pairing.revoked_at ? '' : `<button class="btn btn-danger btn-small" data-revoke-pairing="${escapeAttr(pairing.id)}">Opozovi kod</button>`}
+            ${pairing.revoked_at ? '' : `
+              <button class="btn btn-ghost btn-small" data-create-pairing="${escapeAttr(pairing.id)}">Napravi dodatni kod</button>
+              <button class="btn btn-danger btn-small" data-revoke-pairing="${escapeAttr(pairing.id)}">Opozovi kod</button>`}
           </div>
         </div>`).join('')
       : '<div class="empty-state"><p>Još nema uparenih TV uređaja.</p></div>';
 
     container.innerHTML = `
       <div class="modal" style="max-width:620px; padding:0; background:transparent; border:0;">
-        <p class="content-sub" style="margin:0 0 16px;">Kod je vezan za sobu i omogućava TV-u samo čitanje hotelskog sadržaja i aktivne rezervacije te sobe. Sačuvaj kod; prikazuje se samo jednom.</p>
+        <p class="content-sub" style="margin:0 0 16px;">Kod je vezan za sobu i omogućava TV-u samo čitanje hotelskog sadržaja i aktivne rezervacije te sobe. Kod se prikazuje samo jednom. Dodatni kod ne opoziva postojeći.</p>
         ${pairingLoadError ? '<p class="field-hint">Kod je napravljen, ali lista uređaja se trenutno ne može osvježiti.</p>' : ''}
         <div class="field">
           <label for="pairingRoom">Broj sobe</label>
@@ -701,9 +703,9 @@ async function renderTvPairings(generatedCode = ''){
     if(generatedCode){
       document.getElementById('pairingCodeResult').innerHTML = `
         <div class="field" style="margin-top:18px;">
-          <label>Novi kod — unesi ga na TV-u</label>
+          <label>Dodatni kod za sobu ${escapeHtml(generatedRoom)} — sačuvaj ga</label>
           <input id="generatedPairingCode" readonly value="${escapeAttr(generatedCode)}" style="font-family:monospace;letter-spacing:1px;">
-          <div class="field-hint">Ovaj kod se više neće moći prikazati u admin panelu. Ako ga izgubiš, opozovi ga i napravi novi.</div>
+          <div class="field-hint">Sačuvaj ovaj kod na sigurnom. Neće se moći ponovo prikazati. Uparivanje postojećeg koda ostaje aktivno.</div>
           <button class="btn btn-ghost btn-small" id="copyPairingCodeBtn" type="button" style="margin-top:8px;">Kopiraj kod</button>
         </div>`;
       document.getElementById('copyPairingCodeBtn').addEventListener('click', async () => {
@@ -731,12 +733,34 @@ async function renderTvPairings(generatedCode = ''){
       try{
         const pairing = await createTvPairing(roomNumber);
         setStatus('Kod je kreiran', 'ok');
-        await renderTvPairings(pairing.code);
+        await renderTvPairings(pairing.code, roomNumber);
       }catch(error){
         setStatus(error.message || 'Greška pri kreiranju koda', 'err');
         console.error('Failed creating TV pairing', error);
         button.disabled = false;
       }
+    });
+
+    container.querySelectorAll('[data-create-pairing]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const pairing = pairings.find((item) => item.id === button.dataset.createPairing);
+        if(!pairing){
+          setStatus('Upareni TV nije pronađen', 'err');
+          return;
+        }
+        const roomNumber = pairing.room_number;
+        button.disabled = true;
+        setStatus('Kreiranje dodatnog koda…', '');
+        try{
+          const newPairing = await createTvPairing(roomNumber);
+          setStatus('Dodatni kod je kreiran; postojeće uparivanje je ostalo aktivno', 'ok');
+          await renderTvPairings(newPairing.code, roomNumber);
+        }catch(error){
+          setStatus(error.message || 'Greška pri kreiranju dodatnog koda', 'err');
+          console.error('Failed creating additional TV pairing', error);
+          button.disabled = false;
+        }
+      });
     });
 
     container.querySelectorAll('[data-revoke-pairing]').forEach((button) => {
