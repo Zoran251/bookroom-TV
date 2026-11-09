@@ -236,6 +236,7 @@
     .sidebar .divider{ margin:8px 6px; }
     #hotelHeaderNavItem,
     #bookingNavItem,
+    #tvPairingNavItem,
     #navList{
       display:flex;
       gap:6px;
@@ -327,6 +328,7 @@
     .sidebar .divider{ display:none; }
     #hotelHeaderNavItem,
     #bookingNavItem,
+    #tvPairingNavItem,
     #navList{
       display:contents;
     }
@@ -430,6 +432,7 @@
     <h3>Sistem</h3>
     <div id="hotelHeaderNavItem"></div>
     <div id="bookingNavItem"></div>
+    <div id="tvPairingNavItem"></div>
     <div class="divider"></div>
     <h3>Pločice</h3>
     <div id="navList"></div>
@@ -462,7 +465,7 @@
  
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-import { getAdminContext, loadHotelHeader, loadModuleEntries, saveHotelHeader, saveModuleEntries, loadBookings, saveBookings, signInAdmin, signOutAdmin, signUpAdmin, sendPowerTvCommand, subscribeToCommand } from './src/lib/adminStorage.js'
+import { getAdminContext, loadHotelHeader, loadModuleEntries, saveHotelHeader, saveModuleEntries, loadBookings, saveBookings, signInAdmin, signOutAdmin, signUpAdmin, sendPowerTvCommand, subscribeToCommand, createTvPairing, loadTvPairings, revokeTvPairing } from './src/lib/adminStorage.js'
 
 const ICONS = {
   hotelinfo: '<path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/>',
@@ -644,6 +647,119 @@ async function renderHotelHeader(){
     console.error('Failed loading hotel header', error);
   }
 }
+
+async function renderTvPairings(generatedCode = ''){
+  document.getElementById('catTitle').textContent = 'Uparivanje TV-a';
+  document.getElementById('catSub').textContent = 'Poveži TV konzolu sa sobom da bi prikazivala podatke iz admin panela.';
+  document.getElementById('addBtn').style.display = 'none';
+  const container = document.getElementById('entryContainer');
+  container.innerHTML = '<div class="loading">Učitavanje…</div>';
+
+  let pairings = [];
+  let pairingLoadError = null;
+  try{
+    pairings = await loadTvPairings();
+  }catch(error){
+    if(!generatedCode){
+      container.innerHTML = '<div class="empty-state"><p>Nije moguće učitati uparene TV uređaje.</p></div>';
+      setStatus(error.message || 'Greška pri učitavanju uparivanja', 'err');
+      console.error('Failed loading TV pairings', error);
+      return;
+    }
+    pairingLoadError = error;
+    console.error('Failed refreshing TV pairings after code creation', error);
+  }
+
+  try{
+    const pairingRows = pairings.length
+      ? pairings.map((pairing) => `
+        <div class="entry-card">
+          <div class="entry-body">
+            <div class="entry-title">Soba ${escapeHtml(pairing.room_number)}</div>
+            <div class="entry-sub">${pairing.revoked_at ? 'Uparivanje opozvano' : 'Aktivno uparivanje'}</div>
+          </div>
+          <div class="entry-actions">
+            ${pairing.revoked_at ? '' : `<button class="btn btn-danger btn-small" data-revoke-pairing="${escapeAttr(pairing.id)}">Opozovi kod</button>`}
+          </div>
+        </div>`).join('')
+      : '<div class="empty-state"><p>Još nema uparenih TV uređaja.</p></div>';
+
+    container.innerHTML = `
+      <div class="modal" style="max-width:620px; padding:0; background:transparent; border:0;">
+        <p class="content-sub" style="margin:0 0 16px;">Kod je vezan za sobu i omogućava TV-u samo čitanje hotelskog sadržaja i aktivne rezervacije te sobe. Sačuvaj kod; prikazuje se samo jednom.</p>
+        ${pairingLoadError ? '<p class="field-hint">Kod je napravljen, ali lista uređaja se trenutno ne može osvježiti.</p>' : ''}
+        <div class="field">
+          <label for="pairingRoom">Broj sobe</label>
+          <input id="pairingRoom" maxlength="32" autocomplete="off" placeholder="npr. 204">
+        </div>
+        <button class="btn btn-primary" id="createPairingBtn" type="button">Napravi kod za uparivanje</button>
+        <div id="pairingCodeResult"></div>
+        <h3 style="margin:28px 0 12px;">TV uređaji</h3>
+        <div class="entry-list">${pairingRows}</div>
+      </div>`;
+
+    if(generatedCode){
+      document.getElementById('pairingCodeResult').innerHTML = `
+        <div class="field" style="margin-top:18px;">
+          <label>Novi kod — unesi ga na TV-u</label>
+          <input id="generatedPairingCode" readonly value="${escapeAttr(generatedCode)}" style="font-family:monospace;letter-spacing:1px;">
+          <div class="field-hint">Ovaj kod se više neće moći prikazati u admin panelu. Ako ga izgubiš, opozovi ga i napravi novi.</div>
+          <button class="btn btn-ghost btn-small" id="copyPairingCodeBtn" type="button" style="margin-top:8px;">Kopiraj kod</button>
+        </div>`;
+      document.getElementById('copyPairingCodeBtn').addEventListener('click', async () => {
+        try{
+          await navigator.clipboard.writeText(generatedCode);
+          setStatus('Kod je kopiran', 'ok');
+        }catch(error){
+          setStatus('Kopiranje nije uspjelo', 'err');
+          console.error('Failed copying TV pairing code', error);
+        }
+      });
+    }
+    if(pairingLoadError) setStatus('Kod je napravljen; lista se nije osvježila', 'err');
+
+    document.getElementById('createPairingBtn').addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      const roomNumber = document.getElementById('pairingRoom').value.trim();
+      if(!roomNumber){
+        setStatus('Unesi broj sobe', 'err');
+        return;
+      }
+
+      button.disabled = true;
+      setStatus('Kreiranje koda…', '');
+      try{
+        const pairing = await createTvPairing(roomNumber);
+        setStatus('Kod je kreiran', 'ok');
+        await renderTvPairings(pairing.code);
+      }catch(error){
+        setStatus(error.message || 'Greška pri kreiranju koda', 'err');
+        console.error('Failed creating TV pairing', error);
+        button.disabled = false;
+      }
+    });
+
+    container.querySelectorAll('[data-revoke-pairing]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        if(!confirm('Opozvati ovaj kod? TV će izgubiti pristup sadržaju.')) return;
+        button.disabled = true;
+        try{
+          await revokeTvPairing(button.dataset.revokePairing);
+          setStatus('Uparivanje je opozvano', 'ok');
+          await renderTvPairings();
+        }catch(error){
+          setStatus(error.message || 'Greška pri opozivu koda', 'err');
+          console.error('Failed revoking TV pairing', error);
+          button.disabled = false;
+        }
+      });
+    });
+  }catch(error){
+    container.innerHTML = '<div class="empty-state"><p>Nije moguće učitati uparene TV uređaje.</p></div>';
+    setStatus(error.message || 'Greška pri učitavanju uparivanja', 'err');
+    console.error('Failed loading TV pairings', error);
+  }
+}
  
 async function loadCategory(catId){
   try{
@@ -740,6 +856,14 @@ async function renderSidebar(){
   bItem.addEventListener('click', () => { state.current = 'bookings'; closeMobileMenu(); renderAll(); });
   bookingNav.innerHTML = '';
   bookingNav.appendChild(bItem);
+
+  const tvPairingNav = document.getElementById('tvPairingNavItem');
+  const tvPairingItem = document.createElement('div');
+  tvPairingItem.className = 'nav-item' + (state.current === 'tvPairings' ? ' active' : '');
+  tvPairingItem.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">${ICONS.tv}</svg><span>Uparivanje TV-a</span>`;
+  tvPairingItem.addEventListener('click', () => { state.current = 'tvPairings'; closeMobileMenu(); renderAll(); });
+  tvPairingNav.innerHTML = '';
+  tvPairingNav.appendChild(tvPairingItem);
  
   const nav = document.getElementById('navList');
   nav.innerHTML = '';
@@ -1320,6 +1444,8 @@ async function renderAll(){
   const addBtnLabel = document.getElementById('addBtn');
   if(state.current === 'hotelHeader'){
     await renderHotelHeader();
+  } else if(state.current === 'tvPairings'){
+    await renderTvPairings();
   } else if(state.current === 'bookings'){
     addBtnLabel.style.display = '';
     addBtnLabel.lastChild.textContent = ' Dodaj rezervaciju';

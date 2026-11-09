@@ -18,6 +18,100 @@ function assertSupabaseConfig() {
   }
 }
 
+function getTvPairingCode() {
+  const bridge = typeof window !== 'undefined' ? window.HotelTvAndroid : null
+  if (!bridge || typeof bridge.getPairingCode !== 'function') return null
+
+  const code = bridge.getPairingCode().trim().toLowerCase()
+  return /^[0-9a-f]{32}$/.test(code) ? code : null
+}
+
+async function hashTvPairingCode(code) {
+  const bytes = new TextEncoder().encode(code)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+let tvConsoleDataCache = null
+let tvConsoleDataCacheTime = 0
+
+async function loadTvConsoleData() {
+  assertSupabaseConfig()
+  const code = getTvPairingCode()
+  if (!code) throw new Error('TV nije uparen. Unesite kod za uparivanje na TV-u.')
+
+  if (tvConsoleDataCache && Date.now() - tvConsoleDataCacheTime < 5000) {
+    return tvConsoleDataCache
+  }
+
+  const codeHash = await hashTvPairingCode(code)
+  const { data, error } = await supabase.rpc('get_tv_console_data', {
+    pairing_code_hash: codeHash,
+  })
+  if (error || !data || !data.hotel) {
+    const bridge = typeof window !== 'undefined' ? window.HotelTvAndroid : null
+    bridge?.showPairingError?.('TV nije povezan s hotelskim podacima. Provjeri internet, kod za uparivanje i Supabase migraciju.')
+    throw error || new Error('Kod za uparivanje nije važeći ili je opozvan.')
+  }
+
+  tvConsoleDataCache = data
+  tvConsoleDataCacheTime = Date.now()
+  return data
+}
+
+function generateTvPairingCode() {
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase()
+}
+
+export async function createTvPairing(roomNumber) {
+  assertSupabaseConfig()
+  const room = roomNumber.trim()
+  if (!room) throw new Error('Broj sobe je obavezan.')
+
+  const hotelId = await getHotelId()
+  const code = generateTvPairingCode()
+  const codeHash = await hashTvPairingCode(code.toLowerCase())
+  const { data, error } = await supabase
+    .from('tv_console_pairings')
+    .insert({
+      hotel_id: hotelId,
+      room_number: room,
+      code_hash: codeHash,
+    })
+    .select('id, room_number, created_at')
+    .single()
+
+  if (error) throw error
+  return { ...data, code }
+}
+
+export async function loadTvPairings() {
+  assertSupabaseConfig()
+  const hotelId = await getHotelId()
+  const { data, error } = await supabase
+    .from('tv_console_pairings')
+    .select('id, room_number, created_at, revoked_at')
+    .eq('hotel_id', hotelId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function revokeTvPairing(pairingId) {
+  assertSupabaseConfig()
+  const hotelId = await getHotelId()
+  const { error } = await supabase
+    .from('tv_console_pairings')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('hotel_id', hotelId)
+    .eq('id', pairingId)
+    .is('revoked_at', null)
+
+  if (error) throw error
+}
+
 export async function signInAdmin(username, pin) {
   assertSupabaseConfig()
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -72,6 +166,11 @@ export async function getAdminContext() {
 
 export async function loadHotelHeader() {
   if (!supabase) return null
+  if (getTvPairingCode()) {
+    const data = await loadTvConsoleData()
+    return data.hotel
+  }
+
   const hotelId = await getHotelId()
   const { data, error } = await supabase
     .from('hotels')
@@ -205,6 +304,25 @@ export async function subscribeToCommand(commandId, onChange) {
 export async function loadModuleEntries(moduleName) {
   assertSupabaseConfig()
 
+  if (getTvPairingCode()) {
+    const data = await loadTvConsoleData()
+    return (data.entries || [])
+      .filter((entry) => entry.module_name === moduleName)
+      .map((row) => ({
+        id: row.id,
+        title: row.title || '',
+        subtitle: row.subtitle || '',
+        description: row.description || '',
+        image: row.image_url || '',
+        images: Array.isArray(row.images) ? row.images : (row.image_url ? [row.image_url] : []),
+        location: row.location || '',
+        links: Array.isArray(row.links) ? row.links : [],
+        name: row.name || '',
+        value: row.value || '',
+        created_at: row.created_at,
+      }))
+  }
+
   const hotelId = await getHotelId()
 
   const { data, error } = await supabase
@@ -277,6 +395,18 @@ export async function saveModuleEntries(moduleName, entries) {
 
 export async function loadBookings() {
   assertSupabaseConfig()
+
+  if (getTvPairingCode()) {
+    const data = await loadTvConsoleData()
+    return data.booking ? [{
+      id: data.booking.id,
+      guestName: data.booking.guest_name,
+      room: data.booking.room,
+      checkIn: data.booking.check_in,
+      checkOut: data.booking.check_out,
+      status: data.booking.status,
+    }] : []
+  }
 
   const hotelId = await getHotelId()
 

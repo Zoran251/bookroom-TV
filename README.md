@@ -22,6 +22,17 @@ This repository contains the initial MVP structure for a single-hotel guest TV s
 - each TV is bound to a room through a unique `device_id`
 - TV content is served from hotel and room context, not from a shared guest self-service flow
 
+## Pairing the Hotel TV console
+
+The admin panel and TV console share hotel content through Supabase. To pair a TV:
+
+1. Apply `supabase/migrations/20261109_tv_console_pairings.sql` in the Supabase SQL Editor.
+2. Deploy the updated admin panel and `hotel-tv-panel.html` to Vercel.
+3. Open `/admin/`, sign in, and select **Uparivanje TV-a**. Create a code for the TV's room.
+4. Open the updated Hotel TV APK and enter that code on the TV. The code is shown only once; revoke it in the admin panel if it is lost.
+
+Each pairing can read only the hotel's public TV content and the active booking for its assigned room. It cannot change data. Revoke a code in the admin panel to remove that TV's access.
+
 ## Next phases
 
 1. Supabase schema

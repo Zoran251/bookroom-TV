@@ -3,6 +3,7 @@ package com.bookroom.hoteltv
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -10,9 +11,10 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
 import android.net.http.SslError
-import android.os.Build
 import android.os.Bundle
+import android.text.InputType
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -25,6 +27,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -34,11 +37,10 @@ class MainActivity : Activity() {
     companion object {
         private const val TAG = "[HOTEL-TV]"
         private const val POWER_TV_PACKAGE = "power.bestapps.uk"
-        private const val POWER_TV_APK_MIME_TYPE = "application/vnd.android.package-archive"
-        private const val REQUEST_SELECT_POWER_TV_APK = 1001
-        private const val REQUEST_INSTALL_PERMISSION = 1002
         private const val CONSOLE_URL = "https://bookroom-tv.vercel.app/hotel-tv-panel.html"
         private const val CONSOLE_HOST = "bookroom-tv.vercel.app"
+        private const val PREFERENCES_NAME = "hotel_tv"
+        private const val PAIRING_CODE_KEY = "pairing_code"
     }
 
     private lateinit var webView: WebView
@@ -46,6 +48,9 @@ class MainActivity : Activity() {
     private lateinit var connectionErrorPanel: LinearLayout
     private lateinit var connectionErrorText: TextView
     private lateinit var retryButton: Button
+    private lateinit var pairingPanel: LinearLayout
+    private lateinit var pairingCodeInput: EditText
+    private lateinit var pairingErrorText: TextView
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,6 +74,14 @@ class MainActivity : Activity() {
             isFocusable = true
             isFocusableInTouchMode = true
             webChromeClient = WebChromeClient()
+            setOnLongClickListener {
+                if (getSavedPairingCode().isNotBlank()) {
+                    showPairingChangeDialog()
+                    true
+                } else {
+                    false
+                }
+            }
             webViewClient = object : WebViewClient() {
                 @Suppress("DEPRECATION")
                 override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean =
@@ -172,6 +185,97 @@ class MainActivity : Activity() {
             isFocusable = true
         }
 
+        pairingErrorText = TextView(this).apply {
+            textSize = 16f
+            setTextColor(Color.rgb(255, 150, 150))
+            gravity = Gravity.CENTER
+        }
+        pairingCodeInput = EditText(this).apply {
+            hint = "32-znakovni kod iz admin panela"
+            textSize = 18f
+            setTextColor(Color.WHITE)
+            setHintTextColor(Color.LTGRAY)
+            inputType = InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS or
+                InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            isSingleLine = true
+            isFocusable = true
+            isFocusableInTouchMode = true
+        }
+        val pairButton = Button(this).apply {
+            text = "Poveži ovaj TV"
+            isFocusable = true
+            isFocusableInTouchMode = true
+            setOnClickListener {
+                val code = pairingCodeInput.text.toString().trim().lowercase()
+                if (!Regex("^[0-9a-f]{32}$").matches(code)) {
+                    pairingErrorText.text = "Kod mora imati 32 znaka (slova A–F i brojevi 0–9)."
+                    pairingCodeInput.requestFocus()
+                    return@setOnClickListener
+                }
+
+                getSharedPreferences(PREFERENCES_NAME, MODE_PRIVATE)
+                    .edit()
+                    .putString(PAIRING_CODE_KEY, code)
+                    .apply()
+                pairingErrorText.text = ""
+                loadConsole()
+            }
+        }
+        pairingPanel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(48, 36, 48, 36)
+            setBackgroundColor(Color.rgb(29, 26, 36))
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = "Poveži Hotel TV sa sobom"
+                    textSize = 26f
+                    setTextColor(Color.WHITE)
+                    gravity = Gravity.CENTER
+                },
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = 18 },
+            )
+            addView(
+                TextView(this@MainActivity).apply {
+                    text = "U admin panelu otvori „Uparivanje TV-a“, napravi kod za ovu sobu i unesi ga ispod."
+                    textSize = 18f
+                    setTextColor(Color.LTGRAY)
+                    gravity = Gravity.CENTER
+                },
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = 18 },
+            )
+            addView(
+                pairingCodeInput,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = 8 },
+            )
+            addView(
+                pairingErrorText,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = 8 },
+            )
+            addView(
+                pairButton,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+            visibility = View.GONE
+            isFocusable = true
+        }
+
         rootView = FrameLayout(this).apply {
             addView(
                 webView,
@@ -182,6 +286,13 @@ class MainActivity : Activity() {
             )
             addView(
                 connectionErrorPanel,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                ),
+            )
+            addView(
+                pairingPanel,
                 FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -202,19 +313,39 @@ class MainActivity : Activity() {
     }
 
     private fun loadConsole() {
+        if (getSavedPairingCode().isBlank()) {
+            showPairingPrompt()
+            return
+        }
         if (!hasInternetConnection()) {
             showConnectionError("Nema internet konekcije. Povežite TV na internet i pokušajte ponovo.")
             return
         }
         connectionErrorPanel.visibility = View.GONE
+        pairingPanel.visibility = View.GONE
         webView.visibility = View.VISIBLE
         webView.loadUrl(CONSOLE_URL)
+    }
+
+    private fun getSavedPairingCode(): String =
+        getSharedPreferences(PREFERENCES_NAME, MODE_PRIVATE)
+            .getString(PAIRING_CODE_KEY, "")
+            .orEmpty()
+
+    private fun showPairingPrompt() {
+        connectionErrorPanel.visibility = View.GONE
+        webView.visibility = View.GONE
+        pairingPanel.visibility = View.VISIBLE
+        pairingErrorText.text = ""
+        pairingCodeInput.setText(getSavedPairingCode())
+        pairingCodeInput.requestFocus()
     }
 
     private fun showConnectionError(message: String) {
         connectionErrorText.text = message
         webView.visibility = View.GONE
         connectionErrorPanel.visibility = View.VISIBLE
+        pairingPanel.visibility = View.GONE
         retryButton.requestFocus()
     }
 
@@ -259,43 +390,59 @@ class MainActivity : Activity() {
 
     inner class HotelTvBridge {
         @JavascriptInterface
+        fun getPairingCode(): String {
+            if (!isTrustedConsoleUrl(Uri.parse(webView.url ?: ""))) {
+                android.util.Log.w(TAG, "Ignored pairing-code request from an untrusted page")
+                return ""
+            }
+            return getSavedPairingCode()
+        }
+
+        @JavascriptInterface
+        fun showPairingError(message: String) {
+            if (!isTrustedConsoleUrl(Uri.parse(webView.url ?: ""))) {
+                android.util.Log.w(TAG, "Ignored pairing-error request from an untrusted page")
+                return
+            }
+            runOnUiThread {
+                pairingErrorText.text = message
+                webView.visibility = View.GONE
+                connectionErrorPanel.visibility = View.GONE
+                pairingPanel.visibility = View.VISIBLE
+                pairingCodeInput.requestFocus()
+            }
+        }
+
+        @Suppress("DEPRECATION")
+        @JavascriptInterface
         fun openPowerTv() {
             runOnUiThread {
-                if (!isTrustedConsoleUrl(Uri.parse(webView.url ?: ""))) {
-                    android.util.Log.w(TAG, "Ignored POWER TV request from an untrusted page")
-                    return@runOnUiThread
-                }
-
-                android.util.Log.i(TAG, "Launching Power TV")
-                android.util.Log.i(TAG, "Package: $POWER_TV_PACKAGE")
-
-                val launchIntent = getPowerTvLaunchIntent()
-                if (launchIntent == null) {
-                    if (packageManager.getPackageInfoOrNull(POWER_TV_PACKAGE) == null) {
-                        android.util.Log.e(TAG, "Power TV package not found")
-                        promptToInstallPowerTv()
-                    } else {
-                        android.util.Log.e(TAG, "Power TV has no launcher activity for this device")
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Power TV nema kompatibilnu početnu aktivnost na ovom uređaju.",
-                            Toast.LENGTH_LONG,
-                        ).show()
-                    }
-                    return@runOnUiThread
-                }
-
                 try {
+                    if (!isTrustedConsoleUrl(Uri.parse(webView.url ?: ""))) {
+                        android.util.Log.w(TAG, "Ignored POWER TV request from an untrusted page")
+                        return@runOnUiThread
+                    }
+
+                    val launchIntent = packageManager.getLaunchIntentForPackage(POWER_TV_PACKAGE)
+                        ?: packageManager.getLeanbackLaunchIntentForPackage(POWER_TV_PACKAGE)
+                        ?: Intent(Intent.ACTION_MAIN).apply {
+                            addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+                            component = ComponentName(
+                                POWER_TV_PACKAGE,
+                                "com.flextv.livestore.MainTVActivity",
+                            )
+                        }
+
                     startActivity(launchIntent)
                     android.util.Log.i(TAG, "Power TV launched successfully")
                 } catch (error: android.content.ActivityNotFoundException) {
-                    android.util.Log.e(TAG, "Power TV launch activity not found", error)
+                    android.util.Log.e(TAG, "Power TV is not installed or has no launcher", error)
                     Toast.makeText(
                         this@MainActivity,
-                        "POWER TV se ne može pronaći na ovom uređaju.",
+                        "Power TV nije instaliran",
                         Toast.LENGTH_LONG,
                     ).show()
-                } catch (error: SecurityException) {
+                } catch (error: Exception) {
                     android.util.Log.e(TAG, "Failed to launch Power TV", error)
                     Toast.makeText(
                         this@MainActivity,
@@ -305,136 +452,20 @@ class MainActivity : Activity() {
                 }
             }
         }
-    }
 
-    @Suppress("DEPRECATION")
-    private fun getPowerTvLaunchIntent(): Intent? =
-        packageManager.getLeanbackLaunchIntentForPackage(POWER_TV_PACKAGE)
-            ?: packageManager.getLaunchIntentForPackage(POWER_TV_PACKAGE)
-
-    @Suppress("DEPRECATION")
-    private fun android.content.pm.PackageManager.getPackageInfoOrNull(
-        packageName: String,
-    ): android.content.pm.PackageInfo? =
-        try {
-            getPackageInfo(packageName, 0)
-        } catch (_: android.content.pm.PackageManager.NameNotFoundException) {
-            null
-        }
-
-    private fun promptToInstallPowerTv() {
-        AlertDialog.Builder(this)
-            .setTitle("POWER TV nije instaliran")
-            .setMessage(
-                "Power TV aplikacija nije instalirana na ovom uređaju. " +
-                    "Želite li odabrati POWER TV APK sa USB-a ili memorije uređaja?",
-            )
-            .setNegativeButton("Otkaži", null)
-            .setPositiveButton("Odaberi APK") { _, _ -> requestInstallPermissionOrChooseApk() }
-            .show()
-    }
-
-    private fun requestInstallPermissionOrChooseApk() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || packageManager.canRequestPackageInstalls()) {
-            choosePowerTvApk()
-            return
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle("Dozvoli instalaciju")
-            .setMessage(
-                "Da biste instalirali POWER TV, dozvolite Hotel TV aplikaciji " +
-                    "instalaciju aplikacija iz ovog izvora. Android će zatim tražiti potvrdu instalacije.",
-            )
-            .setNegativeButton("Otkaži", null)
-            .setPositiveButton("Otvori postavke") { _, _ ->
-                val settingsIntent = Intent(
-                    android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                    Uri.parse("package:$packageName"),
-                )
-                try {
-                    startActivityForResult(settingsIntent, REQUEST_INSTALL_PERMISSION)
-                } catch (error: android.content.ActivityNotFoundException) {
-                    android.util.Log.e(TAG, "Unknown-app installation settings are unavailable", error)
-                    Toast.makeText(
-                        this,
-                        "Postavke za dozvolu instalacije nisu dostupne na ovom uređaju.",
-                        Toast.LENGTH_LONG,
-                    ).show()
-                }
+        @Suppress("DEPRECATION")
+        @JavascriptInterface
+        fun isPowerTvInstalled(): Boolean =
+            try {
+                packageManager.getPackageInfo(POWER_TV_PACKAGE, 0)
+                true
+            } catch (error: android.content.pm.PackageManager.NameNotFoundException) {
+                android.util.Log.i(TAG, "Power TV package is not installed")
+                false
+            } catch (error: Exception) {
+                android.util.Log.e(TAG, "Failed to check whether Power TV is installed", error)
+                false
             }
-            .show()
-    }
-
-    private fun choosePowerTvApk() {
-        val pickerIntent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = POWER_TV_APK_MIME_TYPE
-        }
-        try {
-            startActivityForResult(
-                Intent.createChooser(pickerIntent, "Odaberite POWER TV APK"),
-                REQUEST_SELECT_POWER_TV_APK,
-            )
-        } catch (error: android.content.ActivityNotFoundException) {
-            android.util.Log.e(TAG, "No document picker is available for POWER TV APK", error)
-            Toast.makeText(
-                this,
-                "Nije pronađen upravitelj datoteka za odabir POWER TV APK-a.",
-                Toast.LENGTH_LONG,
-            ).show()
-        }
-    }
-
-    @Deprecated("Deprecated in Android API 30, retained for document-picker compatibility")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        when (requestCode) {
-            REQUEST_INSTALL_PERMISSION -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && packageManager.canRequestPackageInstalls()) {
-                    choosePowerTvApk()
-                } else {
-                    Toast.makeText(
-                        this,
-                        "Dozvola za instalaciju POWER TV aplikacije nije odobrena.",
-                        Toast.LENGTH_LONG,
-                    ).show()
-                }
-            }
-            REQUEST_SELECT_POWER_TV_APK -> {
-                if (resultCode != RESULT_OK) return
-                val apkUri = data?.data
-                if (apkUri == null) {
-                    Toast.makeText(this, "APK datoteka nije odabrana.", Toast.LENGTH_LONG).show()
-                    return
-                }
-                installPowerTv(apkUri)
-            }
-        }
-    }
-
-    private fun installPowerTv(apkUri: Uri) {
-        val installIntent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(apkUri, POWER_TV_APK_MIME_TYPE)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        try {
-            startActivity(installIntent)
-        } catch (error: android.content.ActivityNotFoundException) {
-            android.util.Log.e(TAG, "No package installer can open the selected POWER TV APK", error)
-            Toast.makeText(
-                this,
-                "Nije pronađen Android instalater za odabrani APK.",
-                Toast.LENGTH_LONG,
-            ).show()
-        } catch (error: SecurityException) {
-            android.util.Log.e(TAG, "Not allowed to install the selected POWER TV APK", error)
-            Toast.makeText(
-                this,
-                "Android nije dozvolio otvaranje instalacije POWER TV aplikacije.",
-                Toast.LENGTH_LONG,
-            ).show()
-        }
     }
 
     override fun onResume() {
@@ -469,6 +500,29 @@ class MainActivity : Activity() {
         } else {
             super.onBackPressed()
         }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_MENU && getSavedPairingCode().isNotBlank()) {
+            showPairingChangeDialog()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    private fun showPairingChangeDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Uparivanje TV-a")
+            .setMessage("Želiš li promijeniti sobu povezanu s ovim TV-om?")
+            .setPositiveButton("Promijeni kod") { _, _ ->
+                getSharedPreferences(PREFERENCES_NAME, MODE_PRIVATE)
+                    .edit()
+                    .remove(PAIRING_CODE_KEY)
+                    .apply()
+                showPairingPrompt()
+            }
+            .setNegativeButton("Odustani", null)
+            .show()
     }
 
     override fun onDestroy() {
