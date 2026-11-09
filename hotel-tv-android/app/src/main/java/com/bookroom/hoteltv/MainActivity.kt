@@ -51,6 +51,8 @@ class MainActivity : Activity() {
     private lateinit var pairingPanel: LinearLayout
     private lateinit var pairingCodeInput: EditText
     private lateinit var pairingErrorText: TextView
+    @Volatile
+    private var isTrustedConsolePage = false
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,7 +99,8 @@ class MainActivity : Activity() {
                     url: String,
                     favicon: Bitmap?,
                 ) {
-                    if (!isTrustedConsoleUrl(Uri.parse(url))) {
+                    isTrustedConsolePage = isTrustedConsoleUrl(Uri.parse(url))
+                    if (!isTrustedConsolePage) {
                         view.stopLoading()
                         showConnectionError("Blokirano je preusmjeravanje izvan TV konzole.")
                         return
@@ -142,7 +145,8 @@ class MainActivity : Activity() {
 
                 override fun onPageFinished(view: WebView, url: String) {
                     super.onPageFinished(view, url)
-                    if (isTrustedConsoleUrl(Uri.parse(url))) {
+                    isTrustedConsolePage = isTrustedConsoleUrl(Uri.parse(url))
+                    if (isTrustedConsolePage) {
                         connectionErrorPanel.visibility = View.GONE
                     }
                 }
@@ -391,7 +395,7 @@ class MainActivity : Activity() {
     inner class HotelTvBridge {
         @JavascriptInterface
         fun getPairingCode(): String {
-            if (!isTrustedConsoleUrl(Uri.parse(webView.url ?: ""))) {
+            if (!isTrustedConsolePage) {
                 android.util.Log.w(TAG, "Ignored pairing-code request from an untrusted page")
                 return ""
             }
@@ -400,7 +404,7 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun showPairingError(message: String) {
-            if (!isTrustedConsoleUrl(Uri.parse(webView.url ?: ""))) {
+            if (!isTrustedConsolePage) {
                 android.util.Log.w(TAG, "Ignored pairing-error request from an untrusted page")
                 return
             }
@@ -418,7 +422,7 @@ class MainActivity : Activity() {
         fun openPowerTv() {
             runOnUiThread {
                 try {
-                    if (!isTrustedConsoleUrl(Uri.parse(webView.url ?: ""))) {
+                    if (!isTrustedConsolePage) {
                         android.util.Log.w(TAG, "Ignored POWER TV request from an untrusted page")
                         return@runOnUiThread
                     }
