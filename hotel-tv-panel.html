@@ -234,6 +234,25 @@
     text-shadow:0 1px 6px rgba(0,0,0,0.6);
   }
 
+  .data-load-notice{
+    position:fixed;
+    z-index:20;
+    top:16px;
+    left:50%;
+    width:min(900px, calc(100% - 32px));
+    transform:translateX(-50%);
+    padding:14px 18px;
+    border:1px solid rgba(255,190,120,0.5);
+    border-radius:10px;
+    background:rgba(55,32,20,0.96);
+    color:#fff1df;
+    font-size:14px;
+    line-height:1.5;
+    box-shadow:0 8px 26px rgba(0,0,0,0.4);
+  }
+
+  .data-load-notice[hidden]{ display:none; }
+
   /* Photo tiles */
   .tile.photo{ background-size:cover; background-position:center; }
   .tile.photo::after{
@@ -459,6 +478,7 @@
 </style>
 </head>
 <body>
+<div class="data-load-notice" id="dataLoadNotice" role="alert" hidden></div>
 
 <div class="tv-frame">
   <div class="screen">
@@ -564,6 +584,15 @@
 <script type="module">
   import { loadBookings, loadHotelHeader, loadModuleEntries } from './admin/src/lib/adminStorage.js';
 
+  const dataLoadNotice = document.getElementById('dataLoadNotice');
+  const dataLoadIssues = new Set();
+
+  function reportDataLoadIssue(message) {
+    dataLoadIssues.add(message);
+    dataLoadNotice.textContent = [...dataLoadIssues].join(' ');
+    dataLoadNotice.hidden = false;
+  }
+
   async function initializeHotelHeader() {
     try {
       const hotel = await loadHotelHeader();
@@ -575,6 +604,7 @@
       document.getElementById('hotelContact').textContent = [hotel.phone, hotel.email].filter(Boolean).join(' • ');
     } catch (error) {
       console.error('Failed loading hotel header', error);
+      reportDataLoadIssue(`Hotel data could not be loaded: ${error.message || 'unknown error.'}`);
     }
   }
 
@@ -583,6 +613,7 @@
       return await loadModuleEntries(moduleName);
     } catch (error) {
       console.error('Failed loading admin data for', moduleName, error);
+      reportDataLoadIssue(`Admin entries "${moduleName}" could not be loaded: ${error.message || 'unknown error.'}`);
       return [];
     }
   }
@@ -987,10 +1018,16 @@
 
   // Initialize tiles after loading admin data
   async function initializeTiles() {
+    dataLoadIssues.clear();
+    dataLoadNotice.hidden = true;
     await initializeHotelHeader();
     await initializeGuestData();
     infoMap = await buildInfoMap();
     await initializeMarketingPanel();
+
+    if (Object.keys(infoMap).length === 0 && dataLoadIssues.size === 0) {
+      reportDataLoadIssue('TV connected, but no entries were returned for this pairing from admin_form_entries. Check that the TV was paired using a code created under the admin account that owns these entries.');
+    }
     
     // Apply images to tiles if they exist
     document.querySelectorAll('.tile').forEach(t => {
