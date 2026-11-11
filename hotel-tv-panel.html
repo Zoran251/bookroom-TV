@@ -393,21 +393,40 @@
 
   .info-page{
     position:fixed; inset:0; z-index:60; overflow:auto;
-    padding:36px clamp(20px,5vw,72px);
+    padding:0 clamp(16px,2.2vw,42px) clamp(20px,3vw,42px);
     color:var(--text-main);
-    background:radial-gradient(ellipse 900px 500px at 50% 0%, rgba(60,50,40,0.35), transparent 60%), var(--bg-room);
+    background:
+      radial-gradient(ellipse 1000px 600px at 78% 0%,rgba(28,57,84,0.32),transparent 66%),
+      #07111d;
   }
   .info-page[hidden], .info-power-button[hidden]{ display:none; }
-  .info-page-shell{ max-width:1240px; min-height:100%; margin:0 auto; }
-  .info-page-header{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:34px; }
+  .info-page-shell{ max-width:1836px; min-height:100%; margin:0 auto; }
+  .info-page-header{
+    position:relative;
+    z-index:2;
+    display:flex;
+    min-height:clamp(48px,5.2vh,62px);
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:clamp(8px,1vh,12px);
+  }
   .info-back{
-    display:inline-flex; align-items:center; gap:9px; min-height:44px;
-    padding:9px 14px; border:1px solid rgba(255,255,255,0.12); border-radius:10px;
-    background:rgba(255,255,255,0.06); color:var(--text-main); font:600 13px 'Inter',sans-serif; cursor:pointer;
+    display:inline-flex; align-items:center; gap:7px; min-height:36px;
+    padding:6px 8px; border:0; border-radius:8px;
+    background:transparent; color:var(--text-main); font:500 14px 'Inter',sans-serif; cursor:pointer;
   }
   .info-back svg{ width:18px; height:18px; }
-  .info-category-label{ color:var(--accent-gold); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; }
-  .info-page-title{ margin:8px 0 26px; font:500 38px 'Fraunces',serif; }
+  .info-header-status{ display:flex; align-items:center; gap:clamp(14px,2vw,32px); }
+  .info-header-guest{ display:flex; align-items:center; gap:8px; color:var(--text-main); font-size:clamp(12px,.85vw,16px); }
+  .info-header-guest[hidden]{ display:none; }
+  .info-header-guest svg{ width:17px; height:17px; color:var(--text-muted); }
+  .info-header-room{ padding:3px 9px; border:1px solid rgba(212,175,55,.38); border-radius:999px; color:var(--text-main); font-size:12px; }
+  .info-header-time{ display:flex; flex-direction:column; align-items:flex-end; gap:1px; white-space:nowrap; }
+  .info-header-time strong{ color:var(--text-main); font-size:clamp(14px,1vw,19px); line-height:1.1; }
+  .info-header-time span{ color:var(--text-muted); font-size:clamp(10px,.65vw,12px); }
+  .info-category-label{ color:var(--accent-gold); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; }
+  .info-page-title{ margin:8px 0 26px; font:500 42px 'Fraunces',serif; }
   .info-power-button{ margin:0 0 22px; }
   .info-entry-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr)); gap:18px; }
   .info-entry-card{
@@ -422,23 +441,130 @@
   .info-entry-title{ margin:0 0 7px; font:500 21px 'Fraunces',serif; }
   .info-entry-subtitle{ margin:0 0 8px; color:var(--accent-gold); font-size:12px; }
   .info-entry-description{ margin:0; color:var(--text-muted); font-size:13px; line-height:1.6; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden; }
-  .info-article{ max-width:900px; margin:0 auto; }
-  .info-article-gallery{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:12px; margin-bottom:24px; }
-  .info-article-image{ display:block; width:100%; max-height:40vh; aspect-ratio:16 / 9; object-fit:cover; border-radius:10px; }
-  .info-article-title{ margin:0 0 10px; font:500 36px 'Fraunces',serif; }
-  .info-article-subtitle{ margin:0 0 20px; color:var(--accent-gold); font-size:15px; }
-  .info-article-body{ color:var(--text-muted); font-size:16px; line-height:1.8; white-space:pre-wrap; }
-  .info-article-location{ margin:0 0 16px; color:var(--accent-gold); font-size:14px; }
-  .info-article-links{ display:flex; flex-wrap:wrap; gap:12px; margin:20px 0 0; padding:0; list-style:none; }
-  .info-article-links a{ color:var(--accent-gold); text-decoration:underline; text-underline-offset:3px; }
+  .info-page.article-view .info-category-label,
+  .info-page.article-view .info-page-title{ display:none; }
+  .info-article{
+    display:grid;
+    grid-template-columns:minmax(0,1.75fr) minmax(260px,.72fr);
+    grid-template-areas:
+      "hero hero"
+      "main aside";
+    gap:clamp(20px,3vw,48px);
+    align-items:start;
+  }
+  .info-article:not(.has-details){
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"hero" "main";
+  }
+  .info-article-main{ grid-area:main; min-width:0; }
+  .info-article-gallery{ grid-area:hero; margin:0; }
+  .info-article-image-wrap{
+    position:relative;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:16px;
+    background:linear-gradient(145deg,#193149,#101b29 75%);
+    box-shadow:0 18px 48px rgba(0,0,0,.32);
+  }
+  .info-article-image{
+    display:block;
+    width:100%;
+    height:clamp(220px,32vh,370px);
+    object-fit:cover;
+  }
+  .info-article-placeholder{
+    display:grid;
+    width:100%;
+    height:clamp(220px,32vh,370px);
+    place-items:center;
+    color:rgba(212,175,55,.8);
+    background:radial-gradient(circle at 70% 20%,rgba(49,92,122,.45),transparent 50%),linear-gradient(145deg,#193149,#0b1724);
+  }
+  .info-article-placeholder svg{ width:clamp(44px,6vw,84px); height:clamp(44px,6vw,84px); opacity:.72; }
+  .info-article-thumbnails{ display:flex; gap:10px; margin-top:clamp(14px,1.8vh,22px); overflow-x:auto; padding:2px 2px 6px; }
+  .info-article-thumb{
+    flex:0 0 clamp(82px,10vw,148px);
+    padding:0;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.16);
+    border-radius:8px;
+    background:#101b29;
+    cursor:pointer;
+  }
+  .info-article-thumb img{ display:block; width:100%; aspect-ratio:16 / 9; object-fit:cover; }
+  .info-article-thumb[aria-pressed="true"]{ border-color:var(--accent-gold); box-shadow:0 0 0 1px var(--accent-gold); }
+  .info-article-category{ margin-bottom:8px; color:var(--accent-gold); font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .info-article-title{ margin:0 0 10px; font:500 clamp(30px,2.6vw,46px) 'Fraunces',serif; line-height:1.12; }
+  .info-article-subtitle{ margin:0 0 18px; color:var(--text-muted); font-size:clamp(16px,1.15vw,20px); line-height:1.5; }
+  .info-article-body{ color:rgba(235,240,246,.86); font-size:clamp(16px,1.05vw,19px); line-height:1.65; white-space:pre-wrap; }
+  .info-article-aside{
+    grid-area:aside;
+    position:sticky;
+    top:8px;
+    display:grid;
+    gap:14px;
+    padding:clamp(18px,2vw,30px);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:16px;
+    background:linear-gradient(155deg,rgba(18,34,51,.96),rgba(9,20,32,.97));
+    box-shadow:0 18px 48px rgba(0,0,0,.24);
+  }
+  .info-article-aside:empty{ display:none; }
+  .info-article-location{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    margin:0;
+    color:var(--text-main);
+    font-size:16px;
+    line-height:1.5;
+  }
+  .info-article-location svg{ width:22px; height:22px; flex:0 0 auto; color:var(--accent-gold); }
+  .info-article-links{ display:grid; gap:10px; margin:4px 0 0; padding:0; list-style:none; }
+  .info-article-links a{
+    display:flex;
+    min-height:48px;
+    align-items:center;
+    justify-content:center;
+    padding:11px 16px;
+    border:1px solid rgba(212,175,55,.35);
+    border-radius:9px;
+    background:linear-gradient(135deg,#d4af37,#bd9230);
+    color:#101820;
+    font-size:15px;
+    font-weight:700;
+    text-align:center;
+    text-decoration:none;
+  }
+  .info-article-links a:hover,.info-article-links a:focus-visible{ filter:brightness(1.08); outline:3px solid rgba(212,175,55,.45); outline-offset:2px; }
   .info-empty{ padding:32px 0; color:var(--text-muted); font-size:15px; }
 
+  @media(max-width:900px){
+    .info-article{
+      grid-template-columns:minmax(0,1fr);
+      grid-template-areas:"hero" "main" "aside";
+    }
+    .info-article-aside{ position:static; }
+  }
+  @media(max-aspect-ratio:4/3){
+    .info-page{ padding:20px; }
+    .info-article{
+      grid-template-columns:minmax(0,1fr);
+      grid-template-areas:"hero" "main" "aside";
+    }
+    .info-article-aside{ position:static; }
+  }
   @media(max-width:600px){
-    .info-page{ padding:22px 16px; }
-    .info-page-header{ margin-bottom:26px; }
+    .info-page{ padding:0 16px 22px; }
+    .info-page-header{ min-height:52px; margin-bottom:10px; }
     .info-page-title{ font-size:30px; }
-    .info-article-title{ font-size:28px; }
-    .info-article-body{ font-size:14px; }
+    .info-article-title{ font-size:30px; }
+    .info-article-body{ font-size:16px; }
+    .info-header-status{ gap:10px; }
+    .info-header-guest{ gap:5px; font-size:11px; }
+    .info-header-guest svg{ display:none; }
+    .info-header-room{ padding:2px 6px; font-size:10px; }
+    .info-header-time strong{ font-size:14px; }
   }
 
   footer.hint{
@@ -895,7 +1021,17 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m15 18-6-6 6-6M9 12h12"/></svg>
         <span id="infoBackLabel">Početna</span>
       </button>
-      <div class="brand-name"><span id="infoHotelName"></span></div>
+      <div class="info-header-status" aria-label="Podaci o gostu i vremenu">
+        <div class="info-header-guest" id="infoHeaderGuest">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          <strong id="infoGuestName"></strong>
+          <span class="info-header-room" id="infoRoomNumber"></span>
+        </div>
+        <div class="info-header-time">
+          <strong id="infoClock"></strong>
+          <span id="infoDateDisplay"></span>
+        </div>
+      </div>
     </header>
     <p class="info-category-label" id="infoCategoryLabel"></p>
     <h1 class="info-page-title" id="infoPageTitle"></h1>
@@ -963,15 +1099,27 @@
 
   function updateClock() {
     const now = new Date();
-    document.getElementById('clock').textContent = now.toLocaleTimeString('bs-BA', {
+    const time = now.toLocaleTimeString('bs-BA', {
       hour: '2-digit',
       minute: '2-digit',
     });
-    document.getElementById('dateDisplay').textContent = now.toLocaleDateString('bs-BA', {
+    const date = now.toLocaleDateString('bs-BA', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     });
+    document.getElementById('clock').textContent = time;
+    document.getElementById('dateDisplay').textContent = date;
+    document.getElementById('infoClock').textContent = time;
+    document.getElementById('infoDateDisplay').textContent = date;
+  }
+
+  function renderInfoGuestHeader() {
+    const guestName = document.getElementById('guestName').textContent.trim();
+    const roomNumber = document.getElementById('roomNumber').textContent.trim();
+    document.getElementById('infoGuestName').textContent = guestName;
+    document.getElementById('infoRoomNumber').textContent = roomNumber;
+    document.getElementById('infoHeaderGuest').hidden = !guestName && !roomNumber;
   }
 
   async function initializeGuestData() {
@@ -992,10 +1140,12 @@
 
       guestName.textContent = booking?.guestName || '';
       roomNumber.textContent = booking?.room || '';
+      renderInfoGuestHeader();
     } catch (error) {
       console.error('Failed loading guest data', error);
       guestName.textContent = '';
       roomNumber.textContent = '';
+      renderInfoGuestHeader();
     }
   }
 
@@ -1205,47 +1355,99 @@
     return card;
   }
 
-  function renderArticle(entry) {
+  function renderArticle(entry, category) {
     const article = document.createElement('article');
     article.className = 'info-article';
 
     const images = entryImages(entry);
-    if (images.length) {
-      const gallery = document.createElement('div');
-      gallery.className = 'info-article-gallery';
-      images.forEach((imageUrl) => {
-        const image = document.createElement('img');
-        image.className = 'info-article-image';
-        image.src = imageUrl;
-        image.alt = entryTitle(entry);
-        gallery.appendChild(image);
-      });
-      article.appendChild(gallery);
-    }
+    const main = document.createElement('div');
+    main.className = 'info-article-main';
 
+    const gallery = document.createElement('div');
+    gallery.className = 'info-article-gallery';
+    const imageWrap = document.createElement('div');
+    imageWrap.className = 'info-article-image-wrap';
+    let thumbnails = null;
+
+    if (images.length) {
+      const mainImage = document.createElement('img');
+      mainImage.className = 'info-article-image';
+      mainImage.src = images[0];
+      mainImage.alt = entryTitle(entry);
+      mainImage.fetchPriority = 'high';
+      imageWrap.appendChild(mainImage);
+
+      if (images.length > 1) {
+        thumbnails = document.createElement('div');
+        thumbnails.className = 'info-article-thumbnails';
+        images.forEach((imageUrl, index) => {
+          const thumbnail = document.createElement('button');
+          thumbnail.className = 'info-article-thumb';
+          thumbnail.type = 'button';
+          thumbnail.setAttribute('aria-label', `Prikaži fotografiju ${index + 1} od ${images.length}`);
+          thumbnail.setAttribute('aria-pressed', String(index === 0));
+          const image = document.createElement('img');
+          image.src = imageUrl;
+          image.alt = '';
+          image.loading = 'lazy';
+          thumbnail.appendChild(image);
+          thumbnail.addEventListener('click', () => {
+            mainImage.src = imageUrl;
+            thumbnails.querySelectorAll('.info-article-thumb').forEach((item) => item.setAttribute('aria-pressed', 'false'));
+            thumbnail.setAttribute('aria-pressed', 'true');
+          });
+          thumbnails.appendChild(thumbnail);
+        });
+      }
+      gallery.appendChild(imageWrap);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'info-article-placeholder';
+      placeholder.setAttribute('aria-hidden', 'true');
+      placeholder.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>';
+      imageWrap.appendChild(placeholder);
+      gallery.appendChild(imageWrap);
+    }
+    article.appendChild(gallery);
+
+    const categoryLabel = document.createElement('p');
+    categoryLabel.className = 'info-article-category';
+    categoryLabel.textContent = infoCategoryLabels[category] || '';
+    main.appendChild(categoryLabel);
     const title = document.createElement('h2');
     title.className = 'info-article-title';
     title.textContent = entryTitle(entry);
-    article.appendChild(title);
+    main.appendChild(title);
 
     if (entry.subtitle) {
       const subtitle = document.createElement('p');
       subtitle.className = 'info-article-subtitle';
       subtitle.textContent = entry.subtitle;
-      article.appendChild(subtitle);
+      main.appendChild(subtitle);
     }
 
+    const bodyText = entry.description || entry.value || '';
+    if (bodyText) {
+      const body = document.createElement('p');
+      body.className = 'info-article-body';
+      body.textContent = bodyText;
+      main.appendChild(body);
+    }
+
+    if (thumbnails) main.appendChild(thumbnails);
+    article.appendChild(main);
+
+    const aside = document.createElement('aside');
+    aside.className = 'info-article-aside';
     if (entry.location) {
       const location = document.createElement('p');
       location.className = 'info-article-location';
-      location.textContent = entry.location;
-      article.appendChild(location);
+      location.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+      const locationText = document.createElement('span');
+      locationText.textContent = entry.location;
+      location.appendChild(locationText);
+      aside.appendChild(location);
     }
-
-    const body = document.createElement('p');
-    body.className = 'info-article-body';
-    body.textContent = entry.description || entry.value || '';
-    article.appendChild(body);
 
     const links = Array.isArray(entry.links) ? entry.links : [];
     const safeLinks = links.map((item) => {
@@ -1266,9 +1468,11 @@
         listItem.appendChild(link);
         list.appendChild(listItem);
       });
-      article.appendChild(list);
+      aside.appendChild(list);
     }
 
+    article.classList.toggle('has-details', aside.childElementCount > 0);
+    article.appendChild(aside);
     return article;
   }
 
@@ -1288,10 +1492,11 @@
 
     document.querySelector('.tv-frame').style.display = 'none';
     infoPage.hidden = false;
-    document.getElementById('infoHotelName').textContent = document.getElementById('hotelName').textContent;
+    infoPage.classList.toggle('article-view', Boolean(articleId));
     document.getElementById('infoCategoryLabel').textContent = infoCategoryLabels[category];
     document.getElementById('infoPageTitle').textContent = articleId ? 'Članak' : 'Svi članci';
-    document.getElementById('infoBackLabel').textContent = articleId ? 'Svi članci' : 'Početna';
+    document.getElementById('infoBackLabel').textContent = articleId ? 'Nazad' : 'Početna';
+    renderInfoGuestHeader();
     infoPowerButton.hidden = category !== 'tv' || Boolean(articleId);
 
     const content = document.getElementById('infoPageContent');
@@ -1312,7 +1517,7 @@
       if (entry) {
         document.getElementById('infoPageTitle').textContent = entryTitle(entry);
         content.className = '';
-        content.appendChild(renderArticle(entry));
+        content.appendChild(renderArticle(entry, category));
       } else {
         const empty = document.createElement('p');
         empty.className = 'info-empty';
