@@ -421,7 +421,7 @@
   .info-entry-copy{ padding:17px; }
   .info-entry-title{ margin:0 0 7px; font:500 21px 'Fraunces',serif; }
   .info-entry-subtitle{ margin:0 0 8px; color:var(--accent-gold); font-size:12px; }
-  .info-entry-description{ margin:0; color:var(--text-muted); font-size:13px; line-height:1.6; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+  .info-entry-description{ margin:0; color:var(--text-muted); font-size:13px; line-height:1.6; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden; }
   .info-article{ max-width:900px; margin:0 auto; }
   .info-article-gallery{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:12px; margin-bottom:24px; }
   .info-article-image{ display:block; width:100%; max-height:40vh; aspect-ratio:16 / 9; object-fit:cover; border-radius:10px; }
@@ -475,11 +475,351 @@
   .btn-pow:active{ transform:scale(0.97); }
   .btn-pow-primary{ background:linear-gradient(135deg,#c9a469,#a97f44); color:#1d1610; }
   .btn-pow-ghost{ background:rgba(255,255,255,0.06); color:#f4f1ea; border:1px solid rgba(255,255,255,0.08); }
+
+  :root{
+    --bg-room:#07111d;
+    --panel-bg:#101b29;
+    --panel-bg-2:#152336;
+    --tile-purple:#1b2b40;
+    --tile-purple-2:#243b55;
+    --text-main:#f6f7fa;
+    --text-muted:#b8c2cf;
+    --accent-gold:#d4af37;
+    --accent-teal:#4fb3ab;
+    --glow:rgba(212,175,55,0.2);
+    --radius:22px;
+  }
+
+  html,body{ width:100%; height:100%; overflow:hidden; }
+  body{
+    display:block;
+    min-height:100vh;
+    min-height:100dvh;
+    padding:0;
+    background:
+      radial-gradient(ellipse 75vw 55vh at 82% 0%,rgba(28,57,84,0.42),transparent 68%),
+      #07111d;
+  }
+  .tv-frame{
+    width:100%;
+    height:100%;
+    max-width:none;
+    padding:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+  }
+  .screen{
+    width:100%;
+    height:100%;
+    min-height:0;
+    aspect-ratio:auto;
+    display:grid;
+    grid-template-rows:auto minmax(150px,20vh) minmax(0,48vh);
+    align-content:start;
+    gap:clamp(8px,1.1vw,20px);
+    padding:clamp(24px,3vw,58px);
+    overflow:hidden;
+    border-radius:0;
+    background:
+      linear-gradient(145deg,rgba(16,27,41,0.97),rgba(7,17,29,0.98)),
+      #07111d;
+  }
+  .screen::before{
+    background:radial-gradient(circle at 84% 78%,rgba(212,175,55,0.08),transparent 44%);
+  }
+  .header{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+    gap:clamp(12px,2vw,30px);
+    align-items:center;
+    margin:0;
+  }
+  .brand{ min-width:0; gap:10px; }
+  .brand-mark{
+    width:32px;
+    height:32px;
+    flex:0 0 32px;
+    border:0;
+    border-radius:0;
+    background:transparent;
+  }
+  .brand-mark svg{ width:24px; height:24px; }
+  .brand-name{
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:1px;
+    font:600 clamp(13px,1.05vw,20px) 'Inter',sans-serif;
+    letter-spacing:0.01em;
+  }
+  .brand-name span{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    font:500 clamp(13px,1.05vw,20px) 'Inter',sans-serif;
+    letter-spacing:0.01em;
+    color:var(--text-main);
+    text-transform:none;
+    margin:0;
+  }
+  .brand-name span:empty{ display:none; }
+  .brand-name span.brand-kicker{
+    color:var(--accent-gold);
+    font-size:clamp(9px,.7vw,13px);
+    font-weight:700;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+  }
+  .brand-name span#hotelCity,
+  .brand-name span.brand-contact{
+    color:var(--text-muted);
+    font-size:clamp(9px,.7vw,13px);
+    font-weight:400;
+    letter-spacing:0.02em;
+  }
+  .header-center{ justify-content:flex-end; min-width:0; }
+  .guest-info{ gap:8px; font-size:clamp(11px,.9vw,17px); }
+  .guest-info strong{ font-weight:600; }
+  .room-pill{
+    padding:4px 9px;
+    border:1px solid rgba(212,175,55,0.32);
+    background:rgba(212,175,55,0.09);
+    font-size:clamp(10px,.72vw,14px);
+    letter-spacing:0.03em;
+  }
+  .header-time{ gap:2px; font-size:11px; }
+  .header-time strong{ color:var(--text-main); font-size:clamp(16px,1.2vw,23px); font-weight:600; }
+  .header-time span{ color:var(--text-muted); font-size:clamp(10px,.7vw,13px); }
+
+  .welcome-hero{
+    position:relative;
+    display:flex;
+    align-items:center;
+    min-height:0;
+    overflow:hidden;
+    padding:clamp(16px,1.7vw,30px);
+    border:1px solid rgba(212,175,55,0.28);
+    border-radius:14px;
+    background:
+      linear-gradient(100deg,rgba(7,17,29,0.92),rgba(7,17,29,0.44) 64%,rgba(7,17,29,0.35)),
+      linear-gradient(120deg,#172b40,#0c1928 68%,#1d2931);
+    background-position:center;
+    background-size:cover;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),0 18px 50px rgba(0,0,0,0.2);
+  }
+  .welcome-hero::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(0deg,rgba(7,17,29,0.28),transparent 75%);
+    pointer-events:none;
+  }
+  .welcome-copy{ position:relative; z-index:1; max-width:72%; }
+  .welcome-kicker{
+    display:none;
+  }
+  .welcome-hero .welcome{
+    max-width:100%;
+    text-align:left;
+    font:500 clamp(24px,2.35vw,42px) 'Fraunces',serif;
+    line-height:1.13;
+    color:#fff;
+    text-wrap:balance;
+  }
+  .welcome-hero .welcome:empty{ display:none; }
+
+  .grid{
+    min-height:0;
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr)) minmax(92px,.38fr);
+    grid-template-rows:repeat(2,minmax(0,1fr));
+    gap:clamp(8px,.8vw,14px);
+  }
+  .tile{
+    min-width:0;
+    min-height:0;
+    display:flex;
+    flex-direction:row;
+    align-items:flex-end;
+    justify-content:flex-start;
+    gap:8px;
+    padding:clamp(10px,.8vw,16px);
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:14px;
+    background:linear-gradient(145deg,#193149,#101b29 75%);
+    cursor:pointer;
+    outline:none;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,filter .18s ease;
+  }
+  .tile>*{ position:relative; z-index:2; }
+  .tile.photo{ background-size:cover; background-position:center; }
+  .tile.photo::after{
+    z-index:1;
+    background:linear-gradient(180deg,rgba(7,17,29,0.08) 0%,rgba(7,17,29,0.12) 48%,rgba(7,17,29,0.82) 100%);
+  }
+  .tile:hover,
+  .tile:focus,
+  .tile:focus-visible,
+  .tile.is-selected{
+    z-index:3;
+    transform:scale(1.012);
+    border-color:var(--accent-gold);
+    box-shadow:0 0 0 2px rgba(212,175,55,0.62),0 0 24px rgba(212,175,55,0.22),0 16px 32px rgba(0,0,0,0.38);
+    filter:brightness(1.06);
+  }
+  .tile:focus-visible{ outline:3px solid rgba(212,175,55,0.72); outline-offset:3px; }
+  .tile-icon{
+    width:clamp(18px,1.15vw,24px);
+    height:clamp(18px,1.15vw,24px);
+    flex:0 0 auto;
+    display:grid;
+    place-items:center;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    color:#f4e3a8;
+    backdrop-filter:none;
+  }
+  .tile-icon svg{ width:54%; height:54%; }
+  .tile-copy{ display:flex; flex-direction:row; align-items:center; gap:0; min-width:0; }
+  .tile-eyebrow{
+    display:none;
+  }
+  .tile-label{
+    padding:0;
+    color:#fff;
+    font-size:clamp(12px,1vw,19px);
+    font-weight:500;
+    line-height:1.16;
+    text-shadow:0 2px 14px rgba(0,0,0,0.7);
+  }
+  .photo-1{ background-image:linear-gradient(145deg,#28445a,#101b29); }
+  .photo-2{ background-image:linear-gradient(145deg,#514134,#172333); }
+  .photo-3{ background-image:linear-gradient(145deg,#1d5660,#101b29); }
+  .photo-4{ background-image:linear-gradient(145deg,#405236,#152436); }
+  .photo-5{ background-image:linear-gradient(145deg,#4c3548,#122034); }
+  .tile[data-info="marketing"]{ background-image:linear-gradient(145deg,#65502a,#111d2a); }
+  .tile[data-info="tv"],
+  .tile[data-info="radio"]{
+    background:linear-gradient(145deg,#1d3852,#101b29 78%);
+    border-color:rgba(212,175,55,0.24);
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:8px;
+    text-align:center;
+  }
+  .tile[data-info="tv"] .tile-icon,
+  .tile[data-info="radio"] .tile-icon{
+    width:clamp(20px,1.8vw,32px);
+    height:clamp(20px,1.8vw,32px);
+    color:var(--accent-gold);
+  }
+  .tile[data-info="tv"] .tile-icon svg,
+  .tile[data-info="radio"] .tile-icon svg{
+    width:72%;
+    height:72%;
+  }
+  .tile[data-info="tv"] .tile-copy,
+  .tile[data-info="radio"] .tile-copy{
+    justify-content:center;
+  }
+  .tile[data-info="tv"] .tile-label,
+  .tile[data-info="radio"] .tile-label{
+    font-size:clamp(10px,.78vw,15px);
+    font-weight:500;
+  }
+  .tile.marketing-panel{ padding:0; }
+  .tile.marketing-panel .marketing-inner{
+    width:100%;
+    height:100%;
+    display:flex;
+    flex-direction:row;
+    align-items:flex-end;
+    justify-content:flex-start;
+    gap:8px;
+    padding:clamp(10px,.8vw,16px);
+  }
+  .tile.marketing-panel .marketing-inner::before{
+    background:linear-gradient(180deg,rgba(7,17,29,0.08) 0%,rgba(7,17,29,0.1) 48%,rgba(7,17,29,0.84) 100%);
+  }
+  .tile.marketing-panel .marketing-content{ min-width:0; margin:0; }
+  .tile.marketing-panel .marketing-label{
+    display:block;
+    margin-bottom:3px;
+    padding:0;
+    border:0;
+    background:transparent;
+    color:#fff;
+    font-size:clamp(11px,.85vw,17px);
+    font-weight:500;
+    letter-spacing:0;
+    text-transform:none;
+  }
+  .tile.marketing-panel h3{
+    margin:0;
+    color:rgba(255,255,255,.92);
+    font:600 clamp(11px,.72vw,14px) 'Inter',sans-serif;
+    line-height:1.2;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .tile.marketing-panel p{
+    display:-webkit-box;
+    margin-top:2px;
+    color:rgba(255,255,255,0.82);
+    font-size:clamp(9px,.58vw,11px);
+    line-height:1.3;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:2;
+    overflow:hidden;
+  }
+  .g-hotel{ grid-column:1; grid-row:1; }
+  .g-restaurant{ grid-column:2; grid-row:1; }
+  .g-wellness{ grid-column:3; grid-row:1; }
+  .g-sport{ grid-column:1; grid-row:2; }
+  .g-nearby{ grid-column:2; grid-row:2; }
+  .g-marketing{ grid-column:3; grid-row:2; }
+  .g-tv{ grid-column:4; grid-row:1; }
+  .g-radio{ grid-column:4; grid-row:2; }
+  .info-page{
+    background:
+      radial-gradient(ellipse 900px 500px at 50% 0%,rgba(28,57,84,0.42),transparent 60%),
+      var(--bg-room);
+  }
+  .info-back:focus-visible,.btn-pow:focus-visible{
+    outline:3px solid var(--accent-gold);
+    outline-offset:3px;
+    box-shadow:0 0 24px rgba(212,175,55,0.24);
+  }
+
+  @media(max-aspect-ratio:4/3){
+    html,body{ height:auto; min-height:100%; overflow:auto; }
+    .tv-frame{ height:auto; min-height:100vh; }
+    .screen{
+      height:auto;
+      min-height:100vh;
+      min-height:100dvh;
+      grid-template-rows:auto minmax(170px,24vh) auto;
+      overflow:visible;
+      padding:24px;
+    }
+    .header{ grid-template-columns:1fr auto; gap:16px; }
+    .header-center{ grid-column:1 / -1; grid-row:2; justify-content:flex-start; }
+    .header-time{ grid-column:2; grid-row:1; }
+    .grid{ grid-template-columns:repeat(2,minmax(0,1fr)); grid-template-rows:none; grid-auto-rows:minmax(190px,32vh); }
+    .tile-label,.tile.marketing-panel h3{ font-size:clamp(18px,4vw,25px); }
+    .tile.marketing-panel p{ font-size:14px; }
+  }
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{ scroll-behavior:auto !important; transition-duration:0.01ms !important; }
+  }
 </style>
 </head>
 <body>
 <div class="data-load-notice" id="dataLoadNotice" role="alert" hidden></div>
-
 <div class="tv-frame">
   <div class="screen">
 
@@ -488,11 +828,15 @@
         <div class="brand-mark">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2 C9 6 6 8 6 12 a6 6 0 0 0 12 0 c0-4-3-6-6-10Z"/></svg>
         </div>
-        <div class="brand-name"><span id="hotelName"></span><span id="hotelCity"></span><span class="brand-contact" id="hotelContact"></span></div>
+        <div class="brand-name">
+          <span class="brand-kicker">BOOKROOM TV</span>
+          <span id="hotelName"></span>
+          <span id="hotelCity"></span>
+          <span class="brand-contact" id="hotelContact"></span>
+        </div>
       </div>
 
       <div class="header-center">
-        <div class="welcome" id="hotelWelcome"></div>
         <div class="guest-info">
           <strong id="guestName"></strong>
           <div class="room-pill" id="roomNumber"></div>
@@ -505,41 +849,54 @@
       </div>
     </div>
 
+    <section class="welcome-hero" id="welcomeHero" aria-label="Dobrodošlica">
+      <div class="welcome-copy">
+        <span class="welcome-kicker">DOBRO DOŠLI U BOOKROOM TV</span>
+        <h1 class="welcome" id="hotelWelcome"></h1>
+      </div>
+    </section>
+
     <div class="grid">
-      <div class="tile photo photo-1 g-hotel" tabindex="0" data-info="hotel">
-        <div class="tile-label">Hotelske informacije</div>
+      <div class="tile photo photo-1 g-hotel" role="button" aria-label="Hotelske informacije" tabindex="0" data-info="hotel">
+        <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 10h.01M15 10h.01M9 14h.01M15 14h.01M10 21v-4h4v4"/></svg></span>
+        <div class="tile-copy"><span class="tile-eyebrow">HOTEL</span><div class="tile-label">Hotelske informacije</div></div>
       </div>
-      <div class="tile photo photo-2 g-restaurant" tabindex="0" data-info="restaurant">
-        <div class="tile-label">Restorani i barovi</div>
+      <div class="tile photo photo-2 g-restaurant" role="button" aria-label="Restorani i barovi" tabindex="0" data-info="restaurant">
+        <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3v7M4 3v4a3 3 0 0 0 6 0V3M7 10v11M17 3v18M17 3c2 2 3 4 3 7h-3"/></svg></span>
+        <div class="tile-copy"><span class="tile-eyebrow">GASTRONOMIJA</span><div class="tile-label">Restorani i barovi</div></div>
       </div>
-      <div class="tile photo photo-3 g-wellness" tabindex="0" data-info="wellness">
-        <div class="tile-label">Wellness &amp; beauty centri</div>
-      </div>
-
-      <div class="tile photo photo-4 g-sport" tabindex="0" data-info="sport">
-        <div class="tile-label">Sportske aktivnosti</div>
-      </div>
-      <div class="tile photo photo-5 g-nearby" tabindex="0" data-info="nearby">
-        <div class="tile-label">Zanimljivosti u okolici</div>
+      <div class="tile photo photo-3 g-wellness" role="button" aria-label="Wellness i beauty centri" tabindex="0" data-info="wellness">
+        <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v3M5.64 5.64l2.12 2.12M3 12h3M18 12h3M16.24 7.76l2.12-2.12M12 10l1.5 3.5L17 15l-3.5 1.5L12 20l-1.5-3.5L7 15l3.5-1.5L12 10Z"/></svg></span>
+        <div class="tile-copy"><span class="tile-eyebrow">ODMOR I NJEGA</span><div class="tile-label">Wellness</div></div>
       </div>
 
-      <div class="tile marketing-panel g-marketing" tabindex="0" data-info="marketing">
+      <div class="tile photo photo-4 g-sport" role="button" aria-label="Sportske aktivnosti" tabindex="0" data-info="sport">
+        <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="m8 4 4 4 5-1M4 9l5 1 1 5-3 4M17 8l2 5-4 4-5-3"/></svg></span>
+        <div class="tile-copy"><span class="tile-eyebrow">AKTIVNOSTI</span><div class="tile-label">Sportske aktivnosti</div></div>
+      </div>
+      <div class="tile photo photo-5 g-nearby" role="button" aria-label="Zanimljivosti u okolici" tabindex="0" data-info="nearby">
+        <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+        <div class="tile-copy"><span class="tile-eyebrow">ISTRAŽITE</span><div class="tile-label">Zanimljivosti</div></div>
+      </div>
+
+      <div class="tile photo marketing-panel g-marketing" role="button" aria-label="Marketing" tabindex="0" data-info="marketing">
         <div class="marketing-inner" id="marketingPanelInner">
+          <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m3 11 18-5v12L3 13v-2Z"/><path d="m7 14 2 7h4l-2-6M21 10v4"/></svg></span>
           <div class="marketing-content">
-            <div class="marketing-label">Marketing</div>
-            <h3 id="marketingTitle">Summer offer</h3>
-            <p id="marketingText">Special rates and relaxing spa breaks for your stay.</p>
+            <div class="marketing-label">Posebne ponude</div>
+            <h3 id="marketingTitle"></h3>
+            <p id="marketingText"></p>
           </div>
         </div>
       </div>
 
-      <div class="tile icon accent g-tv" tabindex="0" data-info="tv">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg>
-        <div class="tile-label">TV</div>
+      <div class="tile photo icon accent g-tv" role="button" aria-label="TV kanali" tabindex="0" data-info="tv">
+        <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m8 2 4 3 4-3M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01"/></svg></span>
+        <div class="tile-copy"><span class="tile-eyebrow">ZABAVA</span><div class="tile-label">TV</div></div>
       </div>
-      <div class="tile icon accent g-radio" tabindex="0" data-info="radio">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="8" cy="14" r="2.2"/><path d="M13 12h5M13 16h3M7 8l7-4"/></svg>
-        <div class="tile-label">Radio</div>
+      <div class="tile photo icon accent g-radio" role="button" aria-label="Radio stanice" tabindex="0" data-info="radio">
+        <span class="tile-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="12" r="3"/><path d="M15 10h3M15 13h3M15 16h2M7 3l10 2"/></svg></span>
+        <div class="tile-copy"><span class="tile-eyebrow">AUDIO</span><div class="tile-label">Radio</div></div>
       </div>
     </div>
 
@@ -604,7 +961,7 @@
       document.getElementById('hotelContact').textContent = [hotel.phone, hotel.email].filter(Boolean).join(' • ');
     } catch (error) {
       console.error('Failed loading hotel header', error);
-      reportDataLoadIssue(`Hotel data could not be loaded: ${error.message || 'unknown error.'}`);
+      reportDataLoadIssue(`Podaci hotela nisu učitani: ${error.message || 'nepoznata greška.'}`);
     }
   }
 
@@ -613,7 +970,7 @@
       return await loadModuleEntries(moduleName);
     } catch (error) {
       console.error('Failed loading admin data for', moduleName, error);
-      reportDataLoadIssue(`Admin entries "${moduleName}" could not be loaded: ${error.message || 'unknown error.'}`);
+      reportDataLoadIssue(`Unosi "${moduleName}" nisu učitani: ${error.message || 'nepoznata greška.'}`);
       return [];
     }
   }
@@ -667,10 +1024,6 @@
     'wellness': 'wellness',
     'sport': 'sport',
     'okolica': 'nearby',
-    'poruke': 'messages',
-    'budjenje': 'wake',
-    'servis': 'hotel-service',
-    'narudzbe': 'orders',
     'tv': 'tv',
     'radio': 'radio'
   };
@@ -721,7 +1074,7 @@
   // ---- POWER TV app launch ----
   const POWER_TV_PACKAGE = 'power.bestapps.uk';
   const POWER_TV_APK_URL = 'power-tv.apk';
-  const POWER_TV_ANDROID_INTENT = 'intent://#Intent;package=power.bestapps.uk;action=android.intent.action.MAIN;category=android.intent.category.LEANBACK_LAUNCHER;end';
+  const POWER_TV_WINDOWS_PROTOCOL = 'bookroom-power-tv://launch';
 
   // Read Android app config from localStorage (set via Admin panel)
   async function loadPowerTvConfig(){
@@ -750,14 +1103,31 @@
       return;
     }
 
-    window.location.href = POWER_TV_ANDROID_INTENT;
+    window.location.href = POWER_TV_WINDOWS_PROTOCOL;
   }
 
   // Modal wiring
   document.getElementById('powerCloseBtn')?.addEventListener('click', hidePowerTvFallback);
   document.getElementById('powerModal')?.addEventListener('click', (e) => { if(e.target.id === 'powerModal') hidePowerTvFallback(); });
   document.getElementById('powerInfoBtn')?.addEventListener('click', () => { hidePowerTvFallback(); openInfoPage('tv'); });
-  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') hidePowerTvFallback(); });
+  document.addEventListener('keydown', (event) => {
+    const isBackKey = ['Escape', 'Backspace', 'BrowserBack', 'GoBack'].includes(event.key) || event.keyCode === 4;
+    if (!isBackKey) return;
+
+    if (document.getElementById('powerModal').classList.contains('open')) {
+      event.preventDefault();
+      hidePowerTvFallback();
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const category = params.get('category');
+    if (!category || !infoCategoryLabels[category]) return;
+
+    event.preventDefault();
+    if (params.has('article')) setInfoRoute(category);
+    else setInfoRoute(null);
+  });
 
   let infoMap = {};
 
@@ -983,6 +1353,66 @@
     }
   };
 
+  function moveHomeTileFocus(direction) {
+    const tiles = Array.from(document.querySelectorAll('.grid .tile[data-info]'));
+    if (!tiles.length) return;
+
+    const current = tiles.includes(document.activeElement) ? document.activeElement : null;
+    if (!current) {
+      tiles[0].focus();
+      return;
+    }
+
+    const currentRect = current.getBoundingClientRect();
+    const currentX = currentRect.left + currentRect.width / 2;
+    const currentY = currentRect.top + currentRect.height / 2;
+    const horizontal = direction === 'left' || direction === 'right';
+    const sign = direction === 'right' || direction === 'down' ? 1 : -1;
+    const candidates = tiles
+      .filter((tile) => tile !== current)
+      .map((tile) => {
+        const rect = tile.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        const primary = horizontal ? (x - currentX) * sign : (y - currentY) * sign;
+        const cross = horizontal ? Math.abs(y - currentY) : Math.abs(x - currentX);
+        return { tile, x, y, primary, cross };
+      });
+
+    const forward = candidates
+      .filter((candidate) => candidate.primary > 1)
+      .sort((a, b) => (a.primary + a.cross * 1.4) - (b.primary + b.cross * 1.4))[0];
+
+    if (forward) {
+      forward.tile.focus();
+      return;
+    }
+
+    const wrap = candidates.sort((a, b) => {
+      const crossDistance = a.cross - b.cross;
+      if (Math.abs(crossDistance) > 1) return crossDistance;
+      return horizontal ? (a.x - b.x) * sign : (a.y - b.y) * sign;
+    })[0];
+    wrap?.tile.focus();
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (document.querySelector('.power-modal.open')) return;
+    if (document.querySelector('.info-page:not([hidden])')) return;
+
+    const directions = {
+      ArrowLeft: 'left',
+      ArrowRight: 'right',
+      ArrowUp: 'up',
+      ArrowDown: 'down',
+    };
+    const direction = directions[event.key];
+    if (direction) {
+      event.preventDefault();
+      moveHomeTileFocus(direction);
+    }
+  });
+
   async function initializeMarketingPanel() {
     const marketingTile = document.getElementById('marketingPanelInner');
     const marketingTitle = document.getElementById('marketingTitle');
@@ -992,9 +1422,9 @@
     const entries = await loadAdminEntries('marketing');
     const activeEntries = entries.filter((entry) => entry.title || entry.notes || entry.image || entry.url);
     if (!activeEntries.length) {
-      marketingTile.style.backgroundImage = 'linear-gradient(160deg, rgba(86,64,101,0.8), rgba(35,29,40,0.95))';
-      marketingTitle.textContent = 'Novi sadržaj';
-      marketingText.textContent = 'Dodajte baner ili oglas u admin panelu.';
+      marketingTile.style.backgroundImage = '';
+      marketingTitle.textContent = '';
+      marketingText.textContent = '';
       return;
     }
 
@@ -1025,8 +1455,14 @@
     infoMap = await buildInfoMap();
     await initializeMarketingPanel();
 
+    const welcomeHero = document.getElementById('welcomeHero');
+    const welcomeImage = infoMap.hotel?.image;
+    welcomeHero.style.backgroundImage = welcomeImage
+      ? `linear-gradient(100deg,rgba(7,17,29,0.92),rgba(7,17,29,0.44) 64%,rgba(7,17,29,0.35)),url('${welcomeImage}')`
+      : '';
+
     if (Object.keys(infoMap).length === 0 && dataLoadIssues.size === 0) {
-      reportDataLoadIssue('TV connected, but no entries were returned for this pairing from admin_form_entries. Check that the TV was paired using a code created under the admin account that owns these entries.');
+      reportDataLoadIssue('TV je povezan, ali za upareni hotel nisu vraćeni unosi iz admin_form_entries. Provjeri da li je TV uparen kodom napravljenim u admin nalogu koji sadrži ove unose.');
     }
     
     // Apply images to tiles if they exist
@@ -1049,11 +1485,15 @@
       });
 
       t.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
+        if (!event.repeat && ['Enter', 'NumpadEnter', ' '].includes(event.key)) {
           event.preventDefault();
           const key = t.dataset.info;
           if (key) handleTileActivate(key, t);
         }
+      });
+      t.addEventListener('focus', () => {
+        document.querySelectorAll('.grid .tile.is-selected').forEach((tile) => tile.classList.remove('is-selected'));
+        t.classList.add('is-selected');
       });
       t.dataset.bound = 'true';
     });
