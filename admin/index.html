@@ -473,10 +473,6 @@ const ICONS = {
   wellness: '<path d="M12 2 C9 6 6 8 6 12 a6 6 0 0 0 12 0 c0-4-3-6-6-10Z"/>',
   sport: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/>',
   okolica: '<path d="M3 12l9-9 9 9M5 10v10h14V10"/>',
-  poruke: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
-  budjenje: '<circle cx="12" cy="13" r="7"/><path d="M12 9v4l2.5 1.5M8 2 4 5M16 2l4 3"/>',
-  servis: '<path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7Z"/><circle cx="12" cy="9" r="2.3"/>',
-  narudzbe: '<path d="M6 3h9l3 3v15H6z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
   tv: '<rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 21h8M12 17v4"/>',
   radio: '<rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="8" cy="14" r="2.2"/><path d="M13 12h5M13 16h3M7 8l7-4"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
@@ -589,18 +585,13 @@ if (!window.storage) {
  
 const CATEGORIES = [
   { id:'hotelinfo',  label:'Hotelske informacije',    type:'rich',   sub:'Opšte informacije o hotelu (radno vrijeme, sadržaji, pravila).' },
-  { id:'account',    label:'Nalog',                   type:'rich',   sub:'Naziv hotela, lokacija, kontakt i detalji o hotelu.' },
   { id:'marketing',  label:'Marketing i oglasi',      type:'rich',   sub:'Baneri, slike i oglasi koji se rotiraju na TV-u.' },
   { id:'restorani',  label:'Restorani i barovi',       type:'rich',   sub:'Svaki restoran/bar kao zaseban unos sa opisom i slikom.' },
   { id:'wellness',   label:'Wellness & beauty centri',  type:'rich',   sub:'Spa i beauty ponuda, tretmani, radno vrijeme.' },
   { id:'sport',      label:'Sportske aktivnosti',       type:'rich',   sub:'Aktivnosti, tereni, oprema za iznajmljivanje.' },
   { id:'okolica',    label:'Zanimljivosti u okolici',   type:'rich',   sub:'Izleti, znamenitosti i preporuke u blizini.' },
-  { id:'poruke',     label:'Poruke',                    type:'rich',   sub:'Obavještenja i poruke koje gost vidi na TV-u.' },
-  { id:'servis',     label:'Hotelski servis',           type:'rich',   sub:'Usluge koje gost može zatražiti (masaža, čišćenje, itd).' },
-  { id:'narudzbe',   label:'Moje narudžbe',             type:'rich',   sub:'Predlošci ili stavke koje se prikazuju kao dostupne narudžbe.' },
   { id:'tv',         label:'TV kanali',                 type:'simple', sub:'Lista kanala i njihovih brojeva.', nameLabel:'Naziv kanala', valueLabel:'Broj kanala' },
   { id:'radio',      label:'Radio stanice',             type:'simple', sub:'Lista radio stanica i frekvencija.', nameLabel:'Naziv stanice', valueLabel:'Frekvencija' },
-  { id:'budjenje',   label:'Buđenje',                   type:'simple', sub:'Ponuđene opcije vremena za buđenje.', nameLabel:'Opis', valueLabel:'Vrijeme' },
 ];
  
 let state = { current: CATEGORIES[0].id, editingId: null, pendingImage: null, pendingImages: [] };

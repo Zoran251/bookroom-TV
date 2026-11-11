@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#120f15">
+<meta name="theme-color" content="#07111d">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
@@ -515,9 +515,9 @@
     min-height:0;
     aspect-ratio:auto;
     display:grid;
-    grid-template-rows:auto minmax(150px,20vh) minmax(0,48vh);
+    grid-template-rows:auto minmax(150px,24vh) minmax(0,48vh);
     align-content:start;
-    gap:clamp(8px,1.1vw,20px);
+    gap:clamp(16px,1.5vw,28px);
     padding:clamp(24px,3vw,58px);
     overflow:hidden;
     border-radius:0;
@@ -535,16 +535,7 @@
     align-items:center;
     margin:0;
   }
-  .brand{ min-width:0; gap:10px; }
-  .brand-mark{
-    width:32px;
-    height:32px;
-    flex:0 0 32px;
-    border:0;
-    border-radius:0;
-    background:transparent;
-  }
-  .brand-mark svg{ width:24px; height:24px; }
+  .brand{ min-width:0; }
   .brand-name{
     min-width:0;
     display:flex;
@@ -563,13 +554,6 @@
     margin:0;
   }
   .brand-name span:empty{ display:none; }
-  .brand-name span.brand-kicker{
-    color:var(--accent-gold);
-    font-size:clamp(9px,.7vw,13px);
-    font-weight:700;
-    letter-spacing:0.12em;
-    text-transform:uppercase;
-  }
   .brand-name span#hotelCity,
   .brand-name span.brand-contact{
     color:var(--text-muted);
@@ -615,9 +599,6 @@
     pointer-events:none;
   }
   .welcome-copy{ position:relative; z-index:1; max-width:72%; }
-  .welcome-kicker{
-    display:none;
-  }
   .welcome-hero .welcome{
     max-width:100%;
     text-align:left;
@@ -627,6 +608,14 @@
     text-wrap:balance;
   }
   .welcome-hero .welcome:empty{ display:none; }
+  .welcome-message{
+    max-width:72ch;
+    margin-top:clamp(8px,.8vw,14px);
+    color:rgba(255,255,255,.82);
+    font-size:clamp(13px,.95vw,18px);
+    line-height:1.45;
+  }
+  .welcome-message:empty{ display:none; }
 
   .grid{
     min-height:0;
@@ -825,11 +814,7 @@
 
     <div class="header">
       <div class="brand">
-        <div class="brand-mark">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2 C9 6 6 8 6 12 a6 6 0 0 0 12 0 c0-4-3-6-6-10Z"/></svg>
-        </div>
         <div class="brand-name">
-          <span class="brand-kicker">BOOKROOM TV</span>
           <span id="hotelName"></span>
           <span id="hotelCity"></span>
           <span class="brand-contact" id="hotelContact"></span>
@@ -851,8 +836,8 @@
 
     <section class="welcome-hero" id="welcomeHero" aria-label="Dobrodošlica">
       <div class="welcome-copy">
-        <span class="welcome-kicker">DOBRO DOŠLI U BOOKROOM TV</span>
-        <h1 class="welcome" id="hotelWelcome"></h1>
+        <h1 class="welcome" id="welcomeTitle"></h1>
+        <p class="welcome-message" id="hotelWelcome"></p>
       </div>
     </section>
 
@@ -943,6 +928,7 @@
 
   const dataLoadNotice = document.getElementById('dataLoadNotice');
   const dataLoadIssues = new Set();
+  let hotelWelcomeText = '';
 
   function reportDataLoadIssue(message) {
     dataLoadIssues.add(message);
@@ -957,7 +943,7 @@
 
       document.getElementById('hotelName').textContent = hotel.name || '';
       document.getElementById('hotelCity').textContent = hotel.city || '';
-      document.getElementById('hotelWelcome').textContent = hotel.welcome_text || '';
+      hotelWelcomeText = hotel.welcome_text || '';
       document.getElementById('hotelContact').textContent = [hotel.phone, hotel.email].filter(Boolean).join(' • ');
     } catch (error) {
       console.error('Failed loading hotel header', error);
@@ -1011,6 +997,21 @@
       guestName.textContent = '';
       roomNumber.textContent = '';
     }
+  }
+
+  function renderWelcomeMessage() {
+    const guestName = document.getElementById('guestName').textContent.trim();
+    const welcomeTitle = document.getElementById('welcomeTitle');
+    const hotelWelcome = document.getElementById('hotelWelcome');
+
+    if (guestName) {
+      welcomeTitle.textContent = `Dobrodošli, ${guestName}!`;
+      hotelWelcome.textContent = hotelWelcomeText;
+      return;
+    }
+
+    welcomeTitle.textContent = hotelWelcomeText;
+    hotelWelcome.textContent = '';
   }
 
   updateClock();
@@ -1452,6 +1453,7 @@
     dataLoadNotice.hidden = true;
     await initializeHotelHeader();
     await initializeGuestData();
+    renderWelcomeMessage();
     infoMap = await buildInfoMap();
     await initializeMarketingPanel();
 
