@@ -591,7 +591,7 @@ const CATEGORIES = [
   { id:'sport',      label:'Sportske aktivnosti',       type:'rich',   sub:'Aktivnosti, tereni, oprema za iznajmljivanje.' },
   { id:'okolica',    label:'Zanimljivosti u okolici',   type:'rich',   sub:'Izleti, znamenitosti i preporuke u blizini.' },
   { id:'tv',         label:'TV kanali',                 type:'simple', sub:'Lista kanala i njihovih brojeva.', nameLabel:'Naziv kanala', valueLabel:'Broj kanala' },
-  { id:'radio',      label:'Radio stanice',             type:'simple', sub:'Lista radio stanica i frekvencija.', nameLabel:'Naziv stanice', valueLabel:'Frekvencija' },
+  { id:'radio',      label:'Radio stanice',             type:'simple', sub:'Radio stanice sa frekvencijom, slikom i direktnim audio streamom.', nameLabel:'Naziv stanice', valueLabel:'Frekvencija' },
 ];
  
 let state = { current: CATEGORIES[0].id, editingId: null, pendingImage: null, pendingImages: [] };
@@ -939,16 +939,22 @@ async function renderEntries(){
           <button class="btn btn-danger btn-small" data-action="delete" data-id="${entry.id}">Obriši</button>
         </div>`;
     } else {
+      const radioImage = cat.id === 'radio' ? (entry.image || (Array.isArray(entry.images) ? entry.images[0] : '')) : '';
+      const radioLink = cat.id === 'radio' && Array.isArray(entry.links)
+        ? (typeof entry.links[0] === 'string' ? entry.links[0] : (entry.links[0]?.url || ''))
+        : '';
       card.innerHTML = `
-        <div class="entry-thumb">${icon(cat.id)}</div>
+        <div class="entry-thumb">${radioImage ? '' : icon(cat.id)}</div>
         <div class="entry-body">
           <div class="entry-title">${escapeHtml(entry.name || '(bez naziva)')}</div>
           <div class="entry-sub">${escapeHtml(entry.value || '')}</div>
+          ${radioLink ? `<div class="entry-desc">${escapeHtml(radioLink)}</div>` : ''}
         </div>
         <div class="entry-actions">
           <button class="btn btn-ghost btn-small" data-action="edit" data-id="${entry.id}">Uredi</button>
           <button class="btn btn-danger btn-small" data-action="delete" data-id="${entry.id}">Obriši</button>
         </div>`;
+      if(radioImage) card.querySelector('.entry-thumb').style.backgroundImage = `url(${JSON.stringify(radioImage)})`;
     }
     list.appendChild(card);
   });
@@ -1239,7 +1245,7 @@ async function openModal(cat, entryId){
     const entries = await loadCategory(cat.id);
     entry = entries.find(e => e.id === entryId) || entry;
   }
-  state.pendingImage = entry.image || null;
+  state.pendingImage = entry.image || (Array.isArray(entry.images) ? entry.images[0] : null);
  
   if(cat.type === 'rich'){
     if(cat.id === 'account'){
@@ -1290,8 +1296,17 @@ async function openModal(cat, entryId){
     }
   } else {
     fields.innerHTML = `
-      <div class="field"><label>${cat.nameLabel}</label><input id="f_name" value="${escapeAttr(entry.name||'')}" placeholder="npr. ${cat.id==='tv'?'RTS 1':cat.id==='radio'?'Radio Sarajevo':'07:00'}"></div>
-      <div class="field"><label>${cat.valueLabel}</label><input id="f_value" value="${escapeAttr(entry.value||'')}" placeholder="npr. ${cat.id==='tv'?'1':cat.id==='radio'?'92.4 MHz':'Standardno buđenje'}"></div>`;
+      <div class="field"><label>${cat.nameLabel}</label><input id="f_name" value="${escapeAttr(entry.name || (cat.id === 'radio' ? 'Naxi Cafe' : ''))}" placeholder="npr. ${cat.id==='tv'?'RTS 1':'07:00'}"></div>
+      <div class="field"><label>${cat.valueLabel}</label><input id="f_value" value="${escapeAttr(entry.value||'')}" placeholder="npr. ${cat.id==='tv'?'1':cat.id==='radio'?'92.4 MHz':'Standardno buđenje'}"></div>
+      ${cat.id === 'radio' ? `
+        <div class="field"><label>Direktni URL audio streama</label><input id="f_streamUrl" type="url" required value="${escapeAttr((Array.isArray(entry.links) ? (typeof entry.links[0] === 'string' ? entry.links[0] : (entry.links[0]?.url || '')) : '') || (entryId ? '' : 'https://naxidigital-cafe128.streaming.rs:8022/'))}" placeholder="https://..."></div>
+        <div class="field-hint">Dodaj direktni HTTPS stream. Reprodukcija se pokreće ručno na TV-u.</div>
+        <div class="field"><label>Slika stanice (opciono)</label><div id="imageFieldWrap"></div></div>` : ''}`;
+    if(cat.id === 'radio'){
+      const wrap = document.getElementById('imageFieldWrap');
+      if(state.pendingImage) renderImagePreview(wrap, state.pendingImage, 'slika stanice');
+      else renderImageDrop(wrap);
+    }
   }
  
   document.getElementById('overlay').classList.add('open');
@@ -1359,6 +1374,25 @@ async function saveEntry(cat){
         links,
       };
     }
+  } else if(cat.id === 'radio'){
+    const name = document.getElementById('f_name').value.trim();
+    if(!name){ alert('Naziv stanice je obavezan.'); return; }
+    let links;
+    try{
+      links = parseArticleLinks(document.getElementById('f_streamUrl').value);
+      if(!links.length || links.some(link => new URL(link).protocol !== 'https:')) throw new Error('HTTPS stream required');
+    }catch(error){
+      alert('Unesi HTTPS adresu direktnog audio streama.');
+      return;
+    }
+    entry = {
+      id: state.editingId || 'e_' + Date.now(),
+      name,
+      value: document.getElementById('f_value').value.trim(),
+      image: state.pendingImage || '',
+      images: state.pendingImage ? [state.pendingImage] : [],
+      links,
+    };
   } else {
     const name = document.getElementById('f_name').value.trim();
     if(!name){ alert('Ovo polje je obavezno.'); return; }

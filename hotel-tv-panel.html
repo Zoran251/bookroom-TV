@@ -538,6 +538,84 @@
   }
   .info-article-links a:hover,.info-article-links a:focus-visible{ filter:brightness(1.08); outline:3px solid rgba(212,175,55,.45); outline-offset:2px; }
   .info-empty{ padding:32px 0; color:var(--text-muted); font-size:15px; }
+  .radio-player-content{ display:block; }
+  .radio-player{
+    width:min(920px,100%);
+    margin:clamp(12px,4vh,42px) auto;
+    padding:clamp(22px,4vw,48px);
+    border:1px solid rgba(212,175,55,.28);
+    border-radius:20px;
+    background:linear-gradient(145deg,rgba(23,43,62,.96),rgba(8,19,30,.98));
+    box-shadow:0 24px 70px rgba(0,0,0,.32);
+  }
+  .radio-player-station{
+    display:grid;
+    grid-template-columns:clamp(104px,16vw,180px) minmax(0,1fr);
+    align-items:center;
+    gap:clamp(20px,4vw,40px);
+  }
+  .radio-player-art{
+    display:grid;
+    width:100%;
+    aspect-ratio:1;
+    overflow:hidden;
+    place-items:center;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:16px;
+    background:radial-gradient(circle at 50% 40%,rgba(212,175,55,.2),transparent 58%),linear-gradient(145deg,#193149,#0b1724);
+  }
+  .radio-player-art img{ width:100%; height:100%; object-fit:cover; }
+  .radio-player-art svg{ width:42%; height:42%; color:var(--accent-gold); }
+  .radio-player-copy{ min-width:0; }
+  .radio-player-eyebrow{ margin:0 0 8px; color:var(--accent-gold); font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+  .radio-player-title{ margin:0; color:var(--text-main); font:500 clamp(30px,4vw,52px) 'Fraunces',serif; overflow-wrap:anywhere; }
+  .radio-player-frequency{ margin:8px 0 0; color:var(--text-muted); font-size:clamp(15px,1.3vw,19px); }
+  .radio-player-status{ min-height:24px; margin:clamp(22px,4vh,38px) 0 16px; color:var(--text-muted); font-size:16px; }
+  .radio-player-status[data-state="playing"]{ color:#a8d7b4; }
+  .radio-player-status[data-state="error"]{ color:#ffb4a9; }
+  .radio-player-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+  .radio-control-button{
+    display:inline-flex;
+    min-width:116px;
+    min-height:52px;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    padding:10px 18px;
+    border:1px solid rgba(212,175,55,.42);
+    border-radius:10px;
+    background:linear-gradient(135deg,#d4af37,#bd9230);
+    color:#101820;
+    font:700 16px 'Inter',sans-serif;
+    cursor:pointer;
+  }
+  .radio-control-button.secondary{
+    border-color:rgba(255,255,255,.2);
+    background:rgba(255,255,255,.06);
+    color:var(--text-main);
+  }
+  .radio-control-button:focus-visible,.radio-station-choice:focus-visible,.radio-volume:focus-visible{
+    outline:3px solid var(--accent-gold);
+    outline-offset:3px;
+  }
+  .radio-control-button:disabled{ opacity:.45; cursor:not-allowed; }
+  .radio-control-button svg{ width:20px; height:20px; }
+  .radio-volume-group{ display:flex; min-height:52px; align-items:center; gap:12px; padding:0 8px; }
+  .radio-volume-label{ color:var(--text-muted); font-size:14px; }
+  .radio-volume{ width:clamp(110px,16vw,190px); accent-color:var(--accent-gold); cursor:pointer; }
+  .radio-station-list{ display:flex; flex-wrap:wrap; gap:10px; margin-top:clamp(24px,4vh,40px); }
+  .radio-station-choice{
+    min-height:44px;
+    padding:9px 14px;
+    border:1px solid rgba(255,255,255,.16);
+    border-radius:9px;
+    background:rgba(255,255,255,.04);
+    color:var(--text-main);
+    font:500 14px 'Inter',sans-serif;
+    cursor:pointer;
+  }
+  .radio-station-choice[aria-pressed="true"]{ border-color:var(--accent-gold); color:var(--accent-gold); box-shadow:0 0 0 1px rgba(212,175,55,.22); }
+  .radio-player-hint{ margin:18px 0 0; color:var(--text-muted); font-size:13px; }
 
   @media(max-width:900px){
     .info-article{
@@ -565,6 +643,10 @@
     .info-header-guest svg{ display:none; }
     .info-header-room{ padding:2px 6px; font-size:10px; }
     .info-header-time strong{ font-size:14px; }
+    .radio-player-station{ grid-template-columns:88px minmax(0,1fr); gap:16px; }
+    .radio-player-controls{ gap:9px; }
+    .radio-control-button{ min-width:96px; min-height:48px; padding:8px 12px; font-size:14px; }
+    .radio-volume{ width:100px; }
   }
 
   footer.hint{
@@ -1476,6 +1558,265 @@
     return article;
   }
 
+  const defaultRadioStations = [{
+    name: 'Naxi Cafe',
+    value: '',
+    image: '',
+    links: ['https://naxidigital-cafe128.streaming.rs:8022/'],
+  }];
+  let radioAudio = null;
+
+  function radioStreamUrl(station) {
+    const firstLink = Array.isArray(station.links) ? station.links[0] : null;
+    const link = typeof firstLink === 'string' ? firstLink : firstLink?.url;
+    const candidate = link || (/^https?:\/\//i.test(station.value || '') ? station.value : '');
+    if (!candidate || !/^https:\/\//i.test(candidate)) return null;
+    const safeUrl = candidate && safeExternalUrl(candidate);
+    return safeUrl && new URL(safeUrl).protocol === 'https:' ? safeUrl : null;
+  }
+
+  function stopRadioPlayback() {
+    if (!radioAudio) return;
+    radioAudio.pause();
+    radioAudio.removeAttribute('src');
+    radioAudio.load();
+    radioAudio = null;
+  }
+
+  function renderRadioPlayer(entries) {
+    const stations = entries.length ? entries : defaultRadioStations;
+    const player = document.createElement('section');
+    player.className = 'radio-player';
+    player.setAttribute('aria-label', 'Radio player');
+
+    const stationPanel = document.createElement('div');
+    stationPanel.className = 'radio-player-station';
+    const artwork = document.createElement('div');
+    artwork.className = 'radio-player-art';
+    artwork.setAttribute('aria-hidden', 'true');
+    const artworkIcon = document.createElement('svg');
+    artworkIcon.setAttribute('viewBox', '0 0 24 24');
+    artworkIcon.setAttribute('fill', 'none');
+    artworkIcon.setAttribute('stroke', 'currentColor');
+    artworkIcon.setAttribute('stroke-width', '1.5');
+    artworkIcon.innerHTML = '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="12" r="3"/><path d="M15 10h3M15 13h3M15 16h2M7 3l10 2"/>';
+    artwork.appendChild(artworkIcon);
+
+    const copy = document.createElement('div');
+    copy.className = 'radio-player-copy';
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'radio-player-eyebrow';
+    eyebrow.textContent = 'SADA SVIRA';
+    const title = document.createElement('h2');
+    title.className = 'radio-player-title';
+    const frequency = document.createElement('p');
+    frequency.className = 'radio-player-frequency';
+    copy.append(eyebrow, title, frequency);
+    stationPanel.append(artwork, copy);
+    player.appendChild(stationPanel);
+
+    const status = document.createElement('p');
+    status.className = 'radio-player-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    status.dataset.state = 'idle';
+    status.textContent = 'Spremno za reprodukciju.';
+    player.appendChild(status);
+
+    const controls = document.createElement('div');
+    controls.className = 'radio-player-controls';
+    const playButton = document.createElement('button');
+    playButton.type = 'button';
+    playButton.className = 'radio-control-button';
+    playButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>Pokreni</span>';
+    const muteButton = document.createElement('button');
+    muteButton.type = 'button';
+    muteButton.className = 'radio-control-button secondary';
+    muteButton.textContent = 'Utišaj';
+    muteButton.setAttribute('aria-pressed', 'false');
+    const volumeGroup = document.createElement('label');
+    volumeGroup.className = 'radio-volume-group';
+    const volumeLabel = document.createElement('span');
+    volumeLabel.className = 'radio-volume-label';
+    volumeLabel.textContent = 'Jačina';
+    const volume = document.createElement('input');
+    volume.className = 'radio-volume';
+    volume.type = 'range';
+    volume.min = '0';
+    volume.max = '1';
+    volume.step = '0.05';
+    volume.value = '0.7';
+    volume.setAttribute('aria-label', 'Jačina zvuka');
+    volumeGroup.append(volumeLabel, volume);
+    const retryButton = document.createElement('button');
+    retryButton.type = 'button';
+    retryButton.className = 'radio-control-button secondary';
+    retryButton.textContent = 'Ponovo poveži';
+    retryButton.hidden = true;
+    controls.append(playButton, muteButton, volumeGroup, retryButton);
+    player.appendChild(controls);
+
+    const stationButtons = [];
+    if (stations.length > 1) {
+      const stationList = document.createElement('div');
+      stationList.className = 'radio-station-list';
+      stationList.setAttribute('aria-label', 'Odaberi radio stanicu');
+      stations.forEach((station, index) => {
+        const choice = document.createElement('button');
+        choice.type = 'button';
+        choice.className = 'radio-station-choice';
+        choice.textContent = entryTitle(station);
+        choice.setAttribute('aria-pressed', String(index === 0));
+        choice.addEventListener('click', () => selectStation(index));
+        stationButtons.push(choice);
+        stationList.appendChild(choice);
+      });
+      player.appendChild(stationList);
+    }
+
+    const hint = document.createElement('p');
+    hint.className = 'radio-player-hint';
+    hint.textContent = 'Odaberite Pokreni za reprodukciju. Zvuk se neće pokrenuti automatski.';
+    player.appendChild(hint);
+
+    const audio = document.createElement('audio');
+    audio.preload = 'none';
+    audio.volume = Number(volume.value);
+    audio.setAttribute('aria-hidden', 'true');
+    audio.hidden = true;
+    audio.tabIndex = -1;
+    player.appendChild(audio);
+    radioAudio = audio;
+    let selectedStation = stations[0];
+    let selectedIndex = 0;
+
+    function setStatus(message, state) {
+      status.textContent = message;
+      status.dataset.state = state;
+      retryButton.hidden = state !== 'error';
+      const playing = state === 'playing';
+      playButton.innerHTML = playing
+        ? '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z"/></svg><span>Pauziraj</span>'
+        : '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>Pokreni</span>';
+    }
+
+    function updateStationDisplay() {
+      title.textContent = entryTitle(selectedStation);
+      frequency.textContent = selectedStation.value && !/^https?:\/\//i.test(selectedStation.value)
+        ? selectedStation.value
+        : '';
+      artwork.querySelector('img')?.remove();
+      const imageUrl = entryImages(selectedStation)[0];
+      if (imageUrl) {
+        const image = document.createElement('img');
+        image.src = imageUrl;
+        image.alt = '';
+        artwork.appendChild(image);
+      }
+      stationButtons.forEach((button, index) => {
+        button.setAttribute('aria-pressed', String(index === selectedIndex));
+      });
+      playButton.disabled = !radioStreamUrl(selectedStation);
+      retryButton.disabled = playButton.disabled;
+      if (playButton.disabled) setStatus('Stream adresa nije podešena u admin panelu.', 'error');
+      else setStatus('Spremno za reprodukciju.', 'idle');
+    }
+
+    function selectStation(index) {
+      const wasPlaying = !audio.paused;
+      audio.pause();
+      selectedIndex = index;
+      selectedStation = stations[index];
+      updateStationDisplay();
+      if (wasPlaying) setStatus('Stanica je promijenjena. Pritisnite Pokreni.', 'idle');
+    }
+
+    async function startPlayback() {
+      const streamUrl = radioStreamUrl(selectedStation);
+      if (!streamUrl) {
+        setStatus('Stream adresa nije podešena u admin panelu.', 'error');
+        return;
+      }
+      if (audio.src !== streamUrl) audio.src = streamUrl;
+      audio.load();
+      setStatus('Povezivanje sa stanicom…', 'loading');
+      try {
+        await audio.play();
+      } catch (error) {
+        console.error('Radio stream playback failed', error);
+        setStatus('Reprodukcija nije uspjela. Provjerite vezu ili pokušajte ponovo.', 'error');
+      }
+    }
+
+    audio.addEventListener('playing', () => setStatus('Reprodukcija je aktivna.', 'playing'));
+    audio.addEventListener('pause', () => {
+      if (status.dataset.state === 'playing') setStatus('Reprodukcija je pauzirana.', 'paused');
+    });
+    audio.addEventListener('waiting', () => setStatus('Učitavanje audio streama…', 'loading'));
+    audio.addEventListener('error', () => {
+      setStatus('Stream nije dostupan. Pokušajte ponovo povezati.', 'error');
+    });
+    playButton.addEventListener('click', () => {
+      if (audio.paused) {
+        startPlayback();
+      } else {
+        audio.pause();
+        setStatus('Reprodukcija je pauzirana.', 'paused');
+      }
+    });
+    retryButton.addEventListener('click', startPlayback);
+    muteButton.addEventListener('click', () => {
+      audio.muted = !audio.muted;
+      muteButton.textContent = audio.muted ? 'Uključi zvuk' : 'Utišaj';
+      muteButton.setAttribute('aria-pressed', String(audio.muted));
+    });
+    volume.addEventListener('input', () => {
+      audio.volume = Number(volume.value);
+      if (audio.volume > 0 && audio.muted) {
+        audio.muted = false;
+        muteButton.textContent = 'Utišaj';
+        muteButton.setAttribute('aria-pressed', 'false');
+      }
+    });
+    player.addEventListener('keydown', (event) => {
+      const stationIndex = stationButtons.indexOf(document.activeElement);
+      const controlButtons = [playButton, muteButton, volume, retryButton].filter((control) => !control.hidden && !control.disabled);
+      const controlIndex = controlButtons.indexOf(document.activeElement);
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        if (document.activeElement === volume) {
+          volume.value = String(Math.max(0, Math.min(1, Number(volume.value) + (event.key === 'ArrowRight' ? 0.05 : -0.05))));
+          volume.dispatchEvent(new Event('input', { bubbles: true }));
+          event.preventDefault();
+        } else if (stationIndex >= 0) {
+          const next = stationIndex + (event.key === 'ArrowRight' ? 1 : -1);
+          if (stationButtons[next]) stationButtons[next].focus();
+          event.preventDefault();
+        } else if (controlIndex >= 0) {
+          const next = controlIndex + (event.key === 'ArrowRight' ? 1 : -1);
+          if (controlButtons[next]) controlButtons[next].focus();
+          event.preventDefault();
+        }
+      } else if (event.key === 'ArrowDown' && stationIndex >= 0) {
+        playButton.focus();
+        event.preventDefault();
+      } else if (event.key === 'ArrowUp' && stationIndex >= 0) {
+        event.preventDefault();
+      } else if (event.key === 'ArrowUp' && controlIndex >= 0) {
+        const previous = controlButtons[controlIndex - 1];
+        if (previous) previous.focus();
+        else if (stationButtons.length) stationButtons[Math.min(selectedIndex, stationButtons.length - 1)].focus();
+        event.preventDefault();
+      } else if (event.key === 'ArrowDown' && controlIndex >= 0) {
+        const next = controlButtons[controlIndex + 1];
+        if (next) next.focus();
+        event.preventDefault();
+      }
+    });
+
+    updateStationDisplay();
+    return player;
+  }
+
   let infoPageRequest = 0;
   async function renderInfoPage() {
     const params = new URLSearchParams(window.location.search);
@@ -1484,6 +1825,7 @@
     const infoPage = document.getElementById('infoPage');
     const infoPowerButton = document.getElementById('infoPowerButton');
 
+    stopRadioPlayback();
     if (!category || !infoCategoryLabels[category]) {
       infoPage.hidden = true;
       document.querySelector('.tv-frame').style.display = '';
@@ -1511,6 +1853,15 @@
     const entries = await loadAdminEntries(category);
     if (requestId !== infoPageRequest) return;
     content.replaceChildren();
+
+    if (category === 'radio') {
+      document.getElementById('infoPageTitle').textContent = 'Radio player';
+      content.className = 'radio-player-content';
+      const player = renderRadioPlayer(entries);
+      content.appendChild(player);
+      player.querySelector('.radio-control-button')?.focus();
+      return;
+    }
 
     if (articleId) {
       const entry = entries.find((item) => String(item.id) === articleId);
