@@ -402,15 +402,19 @@
   .info-page[hidden], .info-power-button[hidden]{ display:none; }
   .info-page-shell{ max-width:1836px; min-height:100%; margin:0 auto; }
   .info-page-header{
-    position:sticky;
-    top:0;
-    z-index:5;
+    position:relative;
+    z-index:2;
     display:flex;
     min-height:clamp(48px,5.2vh,62px);
     align-items:center;
     justify-content:space-between;
     gap:16px;
     margin-bottom:clamp(8px,1vh,12px);
+  }
+  .info-page.article-view .info-page-header{
+    position:sticky;
+    top:0;
+    z-index:5;
     padding:8px 0;
     background:linear-gradient(180deg,rgba(7,17,29,.98),rgba(7,17,29,.92));
     backdrop-filter:blur(12px);
@@ -444,7 +448,7 @@
   .info-entry-copy{ padding:17px; }
   .info-entry-title{ margin:0 0 7px; font:500 21px 'Fraunces',serif; }
   .info-entry-subtitle{ margin:0 0 8px; color:var(--accent-gold); font-size:12px; }
-  .info-entry-description{ margin:0; color:var(--text-muted); font-size:13px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
+  .info-entry-description{ margin:0; color:var(--text-muted); font-size:13px; line-height:1.6; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden; }
   .info-page.article-view .info-category-label,
   .info-page.article-view .info-page-title{ display:none; }
   .info-article{
