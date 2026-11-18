@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm ci --prefix admin",
-  "buildCommand": "npm --prefix admin run build",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
   "outputDirectory": "admin-deploy"
 }
