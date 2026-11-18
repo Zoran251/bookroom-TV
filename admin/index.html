@@ -616,6 +616,7 @@ async function renderHotelHeader(){
     document.getElementById('saveHeaderBtn').addEventListener('click', async () => {
       const saveButton = document.getElementById('saveHeaderBtn');
       saveButton.disabled = true;
+      setStatus('Čuvanje i prevod…', '');
       try{
         const saved = await saveHotelHeader({
           name: document.getElementById('header_name').value.trim(),
@@ -625,7 +626,11 @@ async function renderHotelHeader(){
           email: document.getElementById('header_email').value.trim(),
         });
         document.querySelector('.brand-name').firstChild.textContent = `${saved.name} `;
-        setStatus('Sačuvano', 'ok');
+        if(saved.translationError){
+          setStatus(`Sačuvano (prevod: ${saved.translationError})`, 'err');
+        }else{
+          setStatus('Sačuvano i prevedeno (EN, DE, IT)', 'ok');
+        }
       }catch(error){
         setStatus('Greška pri čuvanju', 'err');
         console.error('Failed saving hotel header', error);
@@ -785,11 +790,15 @@ async function loadCategory(catId){
   }
 }
 async function saveCategory(catId, entries){
-  setStatus('Čuvanje…', '');
+  setStatus('Čuvanje i prevod…', '');
   try{
-    await saveModuleEntries(catId, entries);
-    setStatus('Sačuvano', 'ok');
-    setTimeout(() => setStatus('Spremno', ''), 1500);
+    const result = await saveModuleEntries(catId, entries);
+    if(result?.translationError){
+      setStatus(`Sačuvano (prevod: ${result.translationError})`, 'err');
+    }else{
+      setStatus('Sačuvano i prevedeno (EN, DE, IT)', 'ok');
+      setTimeout(() => setStatus('Spremno', ''), 2000);
+    }
   }catch(e){
     console.error('Failed saving category', catId, e);
     setStatus('Greška pri čuvanju', 'err');

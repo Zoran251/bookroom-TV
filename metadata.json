@@ -1,0 +1,8 @@
+{
+  "name": "Bookroom TV",
+  "description": "Hotel guest TV console and admin management panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

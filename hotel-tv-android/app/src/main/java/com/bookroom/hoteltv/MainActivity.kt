@@ -11,7 +11,9 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
 import android.net.http.SslError
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.text.InputType
 import android.view.Gravity
 import android.view.KeyEvent
@@ -39,8 +41,11 @@ class MainActivity : Activity() {
         private const val POWER_TV_PACKAGE = "power.bestapps.uk"
         private const val CONSOLE_URL = "https://bookroom-tv.vercel.app/hotel-tv-panel.html"
         private const val CONSOLE_HOST = "bookroom-tv.vercel.app"
-        private const val PREFERENCES_NAME = "hotel_tv"
+        const val PREFERENCES_NAME = "hotel_tv"
         private const val PAIRING_CODE_KEY = "pairing_code"
+        const val AUTO_START_ON_BOOT_KEY = "auto_start_on_boot"
+        const val EXTRA_LAUNCHED_FROM_BOOT = "launched_from_boot"
+        private const val OVERLAY_PROMPT_SHOWN_KEY = "overlay_prompt_shown"
     }
 
     private lateinit var webView: WebView
@@ -77,12 +82,8 @@ class MainActivity : Activity() {
             isFocusableInTouchMode = true
             webChromeClient = WebChromeClient()
             setOnLongClickListener {
-                if (getSavedPairingCode().isNotBlank()) {
-                    showPairingChangeDialog()
-                    true
-                } else {
-                    false
-                }
+                showTvSettingsDialog()
+                true
             }
             webViewClient = object : WebViewClient() {
                 @Suppress("DEPRECATION")
@@ -224,6 +225,7 @@ class MainActivity : Activity() {
                     .apply()
                 pairingErrorText.text = ""
                 loadConsole()
+                maybePromptOverlayPermissionOnce()
             }
         }
         pairingPanel = LinearLayout(this).apply {
@@ -306,6 +308,9 @@ class MainActivity : Activity() {
         setContentView(rootView)
         webView.requestFocus(View.FOCUS_DOWN)
         loadConsole()
+        if (getSavedPairingCode().isNotBlank()) {
+            maybePromptOverlayPermissionOnce()
+        }
     }
 
     private fun hasInternetConnection(): Boolean {
@@ -506,12 +511,126 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        applyImmersiveMode()
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_MENU && getSavedPairingCode().isNotBlank()) {
-            showPairingChangeDialog()
+        if (keyCode == KeyEvent.KEYCODE_MENU) {
+            showTvSettingsDialog()
             return true
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    private fun isAutoStartEnabled(): Boolean =
+        getSharedPreferences(PREFERENCES_NAME, MODE_PRIVATE)
+            .getBoolean(AUTO_START_ON_BOOT_KEY, true)
+
+    private fun setAutoStartEnabled(enabled: Boolean) {
+        getSharedPreferences(PREFERENCES_NAME, MODE_PRIVATE)
+            .edit()
+            .putBoolean(AUTO_START_ON_BOOT_KEY, enabled)
+            .apply()
+    }
+
+    private fun needsOverlayPermissionForBootLaunch(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            isAutoStartEnabled() &&
+            !Settings.canDrawOverlays(this)
+
+    private fun maybePromptOverlayPermissionOnce() {
+        if (!needsOverlayPermissionForBootLaunch()) return
+        val prefs = getSharedPreferences(PREFERENCES_NAME, MODE_PRIVATE)
+        if (prefs.getBoolean(OVERLAY_PROMPT_SHOWN_KEY, false)) return
+        prefs.edit().putBoolean(OVERLAY_PROMPT_SHOWN_KEY, true).apply()
+
+        AlertDialog.Builder(this)
+            .setTitle("Automatsko pokretanje TV-a")
+            .setMessage(
+                "Da bi se Hotel TV automatski pokretao odmah pri paljenju na Android 10+ uređajima, " +
+                    "odobrite dozvolu \"Prikaz preko drugih aplikacija\" ili postavite Hotel TV kao početni ekran (Launcher).",
+            )
+            .setPositiveButton("Otvori dozvolu") { _, _ ->
+                openOverlayPermissionSettings()
+            }
+            .setNegativeButton("Kasnije", null)
+            .show()
+    }
+
+    private fun openOverlayPermissionSettings() {
+        val packageUri = Uri.parse("package:$packageName")
+        val overlayIntent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, packageUri)
+        val detailsIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri)
+        try {
+            startActivity(overlayIntent)
+        } catch (_: Exception) {
+            try {
+                startActivity(detailsIntent)
+            } catch (_: Exception) {
+                Toast.makeText(
+                    this,
+                    "Postavite dozvolu u Postavkama TV-a -> Aplikacije -> Hotel TV.",
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
+    }
+
+    private fun showTvSettingsDialog() {
+        val autoStartEnabled = isAutoStartEnabled()
+        val options = mutableListOf<String>()
+        val actions = mutableListOf<() -> Unit>()
+
+        options += if (autoStartEnabled) {
+            "Automatsko pokretanje pri paljenju TV-a: UKLJUČENO (isključi)"
+        } else {
+            "Automatsko pokretanje pri paljenju TV-a: ISKLJUČENO (uključi)"
+        }
+        actions += {
+            val next = !autoStartEnabled
+            setAutoStartEnabled(next)
+            Toast.makeText(
+                this,
+                if (next) {
+                    "Automatsko pokretanje pri paljenju TV-a je uključeno."
+                } else {
+                    "Automatsko pokretanje pri paljenju TV-a je isključeno."
+                },
+                Toast.LENGTH_LONG,
+            ).show()
+            if (next) openOverlayPermissionIfNeededWithToast()
+        }
+
+        if (needsOverlayPermissionForBootLaunch()) {
+            options += "Odobri dozvolu za pokretanje pri paljenju (Android 10+)"
+            actions += { openOverlayPermissionSettings() }
+        }
+
+        if (getSavedPairingCode().isNotBlank()) {
+            options += "Promijeni kod sobe (uparivanje TV-a)"
+            actions += { showPairingChangeDialog() }
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Postavke Hotel TV-a")
+            .setItems(options.toTypedArray()) { _, which ->
+                actions.getOrNull(which)?.invoke()
+            }
+            .setNegativeButton("Zatvori", null)
+            .show()
+    }
+
+    private fun openOverlayPermissionIfNeededWithToast() {
+        if (!needsOverlayPermissionForBootLaunch()) return
+        AlertDialog.Builder(this)
+            .setTitle("Dozvola na Android 10+")
+            .setMessage("Želite li otvoriti postavke da odobrite prikaz preko drugih aplikacija?")
+            .setPositiveButton("Otvori postavke") { _, _ -> openOverlayPermissionSettings() }
+            .setNegativeButton("Kasnije", null)
+            .show()
     }
 
     private fun showPairingChangeDialog() {

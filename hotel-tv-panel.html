@@ -1017,10 +1017,205 @@
   @media(prefers-reduced-motion:reduce){
     *,*::before,*::after{ scroll-behavior:auto !important; transition-duration:0.01ms !important; }
   }
+  .header-actions{
+    display:flex;
+    align-items:center;
+    gap:clamp(12px,1.4vw,22px);
+  }
+  .tv-lang-switch{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:4px;
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:10px;
+    background:rgba(255,255,255,0.04);
+  }
+  .tv-lang-switch button{
+    min-width:38px;
+    min-height:34px;
+    padding:0 10px;
+    border:0;
+    border-radius:7px;
+    background:transparent;
+    color:var(--text-muted);
+    font:600 clamp(11px,0.8vw,13px) 'Inter',sans-serif;
+    letter-spacing:0.04em;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .tv-lang-switch button:hover{
+    color:var(--text-main);
+    background:rgba(255,255,255,0.06);
+  }
+  .tv-lang-switch button.active{
+    background:linear-gradient(135deg,#d4af37,#bd9230);
+    color:#101820;
+  }
+  .tv-lang-switch button:focus-visible{
+    outline:2px solid var(--accent-gold);
+    outline-offset:2px;
+  }
+
+  .language-intro-screen{
+    position:fixed;
+    inset:0;
+    z-index:80;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:clamp(24px,4vw,56px);
+    background:
+      radial-gradient(ellipse 75vw 55vh at 82% 0%,rgba(28,57,84,0.46),transparent 68%),
+      radial-gradient(circle at 18% 84%,rgba(212,175,55,0.08),transparent 48%),
+      #07111d;
+    color:var(--text-main);
+    overflow:auto;
+  }
+  .language-intro-screen[hidden]{ display:none; }
+  .language-intro-shell{
+    width:min(1040px, 100%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    gap:clamp(18px,2.8vh,32px);
+  }
+  .language-intro-brand{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+  }
+  .language-intro-hotel{
+    font-family:'Fraunces',serif;
+    font-size:clamp(22px,2.2vw,34px);
+    font-weight:500;
+    color:var(--accent-gold);
+    letter-spacing:0.02em;
+  }
+  .language-intro-city{
+    font-size:clamp(12px,1vw,15px);
+    color:var(--text-muted);
+    letter-spacing:0.16em;
+    text-transform:uppercase;
+  }
+  .language-intro-city:empty{ display:none; }
+  .language-intro-heading{
+    font-family:'Fraunces',serif;
+    font-size:clamp(28px,3.2vw,50px);
+    font-weight:500;
+    line-height:1.15;
+    color:#fff;
+    max-width:24ch;
+  }
+  .language-intro-sub{
+    font-size:clamp(13px,1.05vw,17px);
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+  .language-intro-grid{
+    width:100%;
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:clamp(12px,1.5vw,20px);
+    margin-top:clamp(4px,1vh,12px);
+  }
+  .language-intro-card{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    min-height:clamp(140px,19vh,190px);
+    padding:clamp(18px,2vw,26px);
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:16px;
+    background:linear-gradient(155deg,rgba(25,49,73,0.92),rgba(16,27,41,0.96));
+    color:var(--text-main);
+    text-align:left;
+    cursor:pointer;
+    transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .language-intro-card:hover,
+  .language-intro-card:focus-visible,
+  .language-intro-card.active{
+    transform:translateY(-3px);
+    border-color:var(--accent-gold);
+    box-shadow:0 0 0 2px rgba(212,175,55,0.45), 0 18px 40px rgba(0,0,0,0.42);
+    outline:none;
+  }
+  .language-intro-code{
+    font:700 clamp(12px,0.9vw,14px) 'Inter',sans-serif;
+    letter-spacing:0.14em;
+    color:var(--accent-gold);
+  }
+  .language-intro-name{
+    font-family:'Fraunces',serif;
+    font-size:clamp(22px,2vw,30px);
+    font-weight:500;
+    line-height:1.15;
+    color:#fff;
+  }
+  .language-intro-hint{
+    font-size:clamp(12px,0.9vw,14px);
+    color:var(--text-muted);
+    line-height:1.4;
+  }
+  @media(max-width:860px){
+    .language-intro-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    .header-actions{ gap:10px; }
+  }
+  @media(max-width:560px){
+    .header-actions{ flex-direction:column-reverse; align-items:flex-end; gap:6px; }
+    .tv-lang-switch button{ min-width:32px; min-height:30px; padding:0 7px; font-size:11px; }
+    .info-header-status .tv-lang-switch{ display:none; }
+  }
 </style>
 </head>
 <body>
 <div class="data-load-notice" id="dataLoadNotice" role="alert" hidden></div>
+<div class="language-intro-screen" id="languageIntroScreen" role="dialog" aria-modal="true" aria-labelledby="languageIntroHeading" hidden>
+  <div class="language-intro-shell">
+    <div class="language-intro-brand">
+      <div class="language-intro-hotel" id="introHotelName"></div>
+      <div class="language-intro-city" id="introHotelCity"></div>
+    </div>
+    <h1 class="language-intro-heading" id="languageIntroHeading">Dobrodošli · Welcome · Willkommen · Benvenuti</h1>
+    <p class="language-intro-sub">Odaberite jezik · Choose your language · Sprache wählen · Scegli la lingua</p>
+    <div class="language-intro-grid" role="group" aria-label="Odabir jezika / Language selection">
+      <button type="button" class="language-intro-card" data-intro-language="bs">
+        <span class="language-intro-code">BS</span>
+        <div>
+          <div class="language-intro-name">Bosanski</div>
+          <div class="language-intro-hint">Nastavi na bosanskom</div>
+        </div>
+      </button>
+      <button type="button" class="language-intro-card" data-intro-language="en">
+        <span class="language-intro-code">EN</span>
+        <div>
+          <div class="language-intro-name">English</div>
+          <div class="language-intro-hint">Continue in English</div>
+        </div>
+      </button>
+      <button type="button" class="language-intro-card" data-intro-language="de">
+        <span class="language-intro-code">DE</span>
+        <div>
+          <div class="language-intro-name">Deutsch</div>
+          <div class="language-intro-hint">Auf Deutsch fortfahren</div>
+        </div>
+      </button>
+      <button type="button" class="language-intro-card" data-intro-language="it">
+        <span class="language-intro-code">IT</span>
+        <div>
+          <div class="language-intro-name">Italiano</div>
+          <div class="language-intro-hint">Continua in italiano</div>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="tv-frame">
   <div class="screen">
 
@@ -1040,9 +1235,17 @@
         </div>
       </div>
 
-      <div class="header-time">
-        <strong id="clock"></strong>
-        <span id="dateDisplay"></span>
+      <div class="header-actions">
+        <nav class="tv-lang-switch" aria-label="Odabir jezika / Language">
+          <button type="button" data-language="bs" aria-label="Bosanski">BS</button>
+          <button type="button" data-language="de" aria-label="Deutsch">DE</button>
+          <button type="button" data-language="en" aria-label="English">EN</button>
+          <button type="button" data-language="it" aria-label="Italiano">IT</button>
+        </nav>
+        <div class="header-time">
+          <strong id="clock"></strong>
+          <span id="dateDisplay"></span>
+        </div>
       </div>
     </div>
 
@@ -1113,6 +1316,12 @@
           <strong id="infoGuestName"></strong>
           <span class="info-header-room" id="infoRoomNumber"></span>
         </div>
+        <nav class="tv-lang-switch" aria-label="Odabir jezika / Language">
+          <button type="button" data-language="bs" aria-label="Bosanski">BS</button>
+          <button type="button" data-language="de" aria-label="Deutsch">DE</button>
+          <button type="button" data-language="en" aria-label="English">EN</button>
+          <button type="button" data-language="it" aria-label="Italiano">IT</button>
+        </nav>
         <div class="info-header-time">
           <strong id="infoClock"></strong>
           <span id="infoDateDisplay"></span>
@@ -1146,11 +1355,367 @@
 <script src="/pwa-register.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-  import { loadBookings, loadHotelHeader, loadModuleEntries } from './admin/src/lib/adminStorage.js';
+  import { loadBookings, loadHotelHeader, loadModuleEntries, subscribeToHotelUpdates, translateEntriesOnDemand } from './admin/src/lib/adminStorage.js';
+
+  const SUPPORTED_LANGUAGES = ['bs', 'de', 'en', 'it'];
+  const UI_STRINGS = {
+    bs: {
+      locale: 'bs-BA',
+      welcomeGuest: (name) => `Dobrodošli, ${name}!`,
+      tiles: {
+        hotel: 'Hotelske informacije',
+        restaurant: 'Restorani i barovi',
+        wellness: 'Wellness',
+        sport: 'Sportske aktivnosti',
+        nearby: 'Zanimljivosti',
+        marketing: 'Posebne ponude',
+        tv: 'TV',
+        radio: 'Radio',
+      },
+      categories: {
+        hotelinfo: 'Hotelske informacije',
+        marketing: 'Marketing',
+        restorani: 'Restorani i barovi',
+        wellness: 'Wellness & beauty centri',
+        sport: 'Sportske aktivnosti',
+        okolica: 'Zanimljivosti u okolici',
+        tv: 'TV kanali',
+        radio: 'Radio stanice',
+      },
+      home: 'Početna',
+      back: 'Nazad',
+      allArticles: 'Svi članci',
+      article: 'Članak',
+      loadingArticles: 'Učitavanje članaka…',
+      noArticles: 'Nema objavljenih članaka za ovu kategoriju.',
+      articleNotFound: 'Članak nije pronađen.',
+      launchPowerTv: 'Pokreni POWER TV',
+      defaultOffer: 'Posebna ponuda za goste.',
+      fallbackContent: 'Sadržaj',
+      showPhoto: (i, total) => `Prikaži fotografiju ${i} od ${total}`,
+      radioPlayer: 'Radio player',
+      nowPlaying: 'SADA SVIRA',
+      readyToPlay: 'Spremno za reprodukciju.',
+      play: 'Pokreni',
+      pause: 'Pauziraj',
+      mute: 'Utišaj',
+      unmute: 'Uključi zvuk',
+      volume: 'Jačina',
+      reconnect: 'Ponovo poveži',
+      radioHint: 'Odaberite Pokreni za reprodukciju. Zvuk se neće pokrenuti automatski.',
+      streamMissing: 'Stream adresa nije podešena u admin panelu.',
+      stationChanged: 'Stanica je promijenjena. Pritisnite Pokreni.',
+      connecting: 'Povezivanje sa stanicom…',
+      playbackFailed: 'Reprodukcija nije uspjela. Provjerite vezu ili pokušajte ponovo.',
+      playbackActive: 'Reprodukcija je aktivna.',
+      playbackPaused: 'Reprodukcija je pauzirana.',
+      loadingStream: 'Učitavanje audio streama…',
+      streamUnavailable: 'Stream nije dostupan. Pokušajte ponovo povezati.',
+      close: 'Zatvori',
+      openHtmlTv: 'Otvori TV sadržaj u HTML-u',
+      downloadApk: '⬇ Preuzmi APK',
+    },
+    en: {
+      locale: 'en-GB',
+      welcomeGuest: (name) => `Welcome, ${name}!`,
+      tiles: {
+        hotel: 'Hotel Information',
+        restaurant: 'Restaurants & Bars',
+        wellness: 'Wellness',
+        sport: 'Sports Activities',
+        nearby: 'Attractions',
+        marketing: 'Special Offers',
+        tv: 'TV',
+        radio: 'Radio',
+      },
+      categories: {
+        hotelinfo: 'Hotel Information',
+        marketing: 'Special Offers',
+        restorani: 'Restaurants & Bars',
+        wellness: 'Wellness & Beauty',
+        sport: 'Sports Activities',
+        okolica: 'Nearby Attractions',
+        tv: 'TV Channels',
+        radio: 'Radio Stations',
+      },
+      home: 'Home',
+      back: 'Back',
+      allArticles: 'All Articles',
+      article: 'Article',
+      loadingArticles: 'Loading articles…',
+      noArticles: 'No published articles in this category.',
+      articleNotFound: 'Article not found.',
+      launchPowerTv: 'Launch POWER TV',
+      defaultOffer: 'Special offer for guests.',
+      fallbackContent: 'Content',
+      showPhoto: (i, total) => `Show photo ${i} of ${total}`,
+      radioPlayer: 'Radio Player',
+      nowPlaying: 'NOW PLAYING',
+      readyToPlay: 'Ready to play.',
+      play: 'Play',
+      pause: 'Pause',
+      mute: 'Mute',
+      unmute: 'Unmute',
+      volume: 'Volume',
+      reconnect: 'Reconnect',
+      radioHint: 'Select Play to start playback. Audio will not start automatically.',
+      streamMissing: 'Stream URL is not configured in the admin panel.',
+      stationChanged: 'Station changed. Press Play.',
+      connecting: 'Connecting to station…',
+      playbackFailed: 'Playback failed. Check connection or try again.',
+      playbackActive: 'Playback active.',
+      playbackPaused: 'Playback paused.',
+      loadingStream: 'Loading audio stream…',
+      streamUnavailable: 'Stream unavailable. Try reconnecting.',
+      close: 'Close',
+      openHtmlTv: 'Open TV content in HTML',
+      downloadApk: '⬇ Download APK',
+    },
+    de: {
+      locale: 'de-DE',
+      welcomeGuest: (name) => `Willkommen, ${name}!`,
+      tiles: {
+        hotel: 'Hotelinformationen',
+        restaurant: 'Restaurants & Bars',
+        wellness: 'Wellness',
+        sport: 'Sportaktivitäten',
+        nearby: 'Sehenswürdigkeiten',
+        marketing: 'Sonderangebote',
+        tv: 'TV',
+        radio: 'Radio',
+      },
+      categories: {
+        hotelinfo: 'Hotelinformationen',
+        marketing: 'Sonderangebote',
+        restorani: 'Restaurants & Bars',
+        wellness: 'Wellness & Beauty',
+        sport: 'Sportaktivitäten',
+        okolica: 'Sehenswürdigkeiten in der Nähe',
+        tv: 'TV-Kanäle',
+        radio: 'Radiosender',
+      },
+      home: 'Startseite',
+      back: 'Zurück',
+      allArticles: 'Alle Artikel',
+      article: 'Artikel',
+      loadingArticles: 'Artikel werden geladen…',
+      noArticles: 'Keine veröffentlichten Artikel in dieser Kategorie.',
+      articleNotFound: 'Artikel nicht gefunden.',
+      launchPowerTv: 'POWER TV starten',
+      defaultOffer: 'Besonderes Angebot für Gäste.',
+      fallbackContent: 'Inhalt',
+      showPhoto: (i, total) => `Foto ${i} von ${total} anzeigen`,
+      radioPlayer: 'Radioplayer',
+      nowPlaying: 'JETZT LÄUFT',
+      readyToPlay: 'Bereit zur Wiedergabe.',
+      play: 'Abspielen',
+      pause: 'Pause',
+      mute: 'Stummschalten',
+      unmute: 'Ton einschalten',
+      volume: 'Lautstärke',
+      reconnect: 'Erneut verbinden',
+      radioHint: 'Wählen Sie Abspielen, um die Wiedergabe zu starten. Der Ton startet nicht automatisch.',
+      streamMissing: 'Stream-Adresse ist im Admin-Panel nicht konfiguriert.',
+      stationChanged: 'Sender gewechselt. Drücken Sie Abspielen.',
+      connecting: 'Verbindung zum Sender wird hergestellt…',
+      playbackFailed: 'Wiedergabe fehlgeschlagen. Verbindung prüfen oder erneut versuchen.',
+      playbackActive: 'Wiedergabe aktiv.',
+      playbackPaused: 'Wiedergabe pausiert.',
+      loadingStream: 'Audiostream wird geladen…',
+      streamUnavailable: 'Stream nicht verfügbar. Bitte erneut verbinden.',
+      close: 'Schließen',
+      openHtmlTv: 'TV-Inhalte in HTML öffnen',
+      downloadApk: '⬇ APK herunterladen',
+    },
+    it: {
+      locale: 'it-IT',
+      welcomeGuest: (name) => `Benvenuti, ${name}!`,
+      tiles: {
+        hotel: 'Informazioni hotel',
+        restaurant: 'Ristoranti e bar',
+        wellness: 'Benessere',
+        sport: 'Attività sportive',
+        nearby: 'Attrazioni',
+        marketing: 'Offerte speciali',
+        tv: 'TV',
+        radio: 'Radio',
+      },
+      categories: {
+        hotelinfo: 'Informazioni sull\'hotel',
+        marketing: 'Offerte speciali',
+        restorani: 'Ristoranti e bar',
+        wellness: 'Benessere e bellezza',
+        sport: 'Attività sportive',
+        okolica: 'Attrazioni nei dintorni',
+        tv: 'Canali TV',
+        radio: 'Stazioni radio',
+      },
+      home: 'Home',
+      back: 'Indietro',
+      allArticles: 'Tutti gli articoli',
+      article: 'Articolo',
+      loadingArticles: 'Caricamento articoli…',
+      noArticles: 'Nessun articolo pubblicato in questa categoria.',
+      articleNotFound: 'Articolo non trovato.',
+      launchPowerTv: 'Avvia POWER TV',
+      defaultOffer: 'Offerta speciale per gli ospiti.',
+      fallbackContent: 'Contenuto',
+      showPhoto: (i, total) => `Mostra foto ${i} di ${total}`,
+      radioPlayer: 'Lettore radio',
+      nowPlaying: 'IN RIPRODUZIONE',
+      readyToPlay: 'Pronto per la riproduzione.',
+      play: 'Riproduci',
+      pause: 'Pausa',
+      mute: 'Silenzia',
+      unmute: 'Riattiva audio',
+      volume: 'Volume',
+      reconnect: 'Riconnetti',
+      radioHint: 'Seleziona Riproduci per avviare la riproduzione. L\'audio non si avvia automaticamente.',
+      streamMissing: 'Indirizzo stream non configurato nel pannello admin.',
+      stationChanged: 'Stazione cambiata. Premi Riproduci.',
+      connecting: 'Connessione alla stazione…',
+      playbackFailed: 'Riproduzione non riuscita. Controlla la connessione o riprova.',
+      playbackActive: 'Riproduzione attiva.',
+      playbackPaused: 'Riproduzione in pausa.',
+      loadingStream: 'Caricamento stream audio…',
+      streamUnavailable: 'Stream non disponibile. Prova a riconnetterti.',
+      close: 'Chiudi',
+      openHtmlTv: 'Apri contenuti TV in HTML',
+      downloadApk: '⬇ Scarica APK',
+    },
+  };
+
+  function shouldShowLanguageIntro() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('category') || params.has('article')) return false;
+    if (SUPPORTED_LANGUAGES.includes(params.get('lang'))) return false;
+    try {
+      return sessionStorage.getItem('tvLanguageChosen') !== '1';
+    } catch {
+      return true;
+    }
+  }
+
+  let introVisible = shouldShowLanguageIntro();
+
+  function getInitialLanguage() {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get('lang');
+    if (SUPPORTED_LANGUAGES.includes(fromUrl)) return fromUrl;
+    const saved = localStorage.getItem('tvLanguage');
+    return SUPPORTED_LANGUAGES.includes(saved) ? saved : 'bs';
+  }
+
+  let activeLanguage = getInitialLanguage();
+  document.documentElement.lang = activeLanguage;
+
+  function ui() {
+    return UI_STRINGS[activeLanguage] || UI_STRINGS.bs;
+  }
+
+  const ON_DEMAND_CACHE_KEY = 'bookroom_tv_ondemand_translations_v1';
+  let onDemandCache = {};
+  try {
+    onDemandCache = JSON.parse(localStorage.getItem(ON_DEMAND_CACHE_KEY) || '{}') || {};
+  } catch {
+    onDemandCache = {};
+  }
+  const inFlightTranslations = new Set();
+
+  function recordSourceSignature(fields) {
+    const clean = {};
+    for (const key of Object.keys(fields).sort()) {
+      const val = typeof fields[key] === 'string' ? fields[key].trim() : '';
+      if (val) clean[key] = val;
+    }
+    return JSON.stringify(clean);
+  }
+
+  function saveOnDemandCache() {
+    try {
+      localStorage.setItem(ON_DEMAND_CACHE_KEY, JSON.stringify(onDemandCache));
+    } catch {
+      // ignore storage quota errors
+    }
+  }
+
+  function tr(record, field) {
+    if (!record) return '';
+    if (activeLanguage === 'bs') return record[field] || '';
+    const stored = record.translations?.[activeLanguage]?.[field];
+    if (typeof stored === 'string' && stored.trim()) return stored;
+    const cacheId = record.id ? `${record.id}:${field}` : '';
+    const sourceVal = typeof record[field] === 'string' ? record[field].trim() : '';
+    if (cacheId && sourceVal) {
+      const cached = onDemandCache[cacheId];
+      if (cached && cached._source === sourceVal && cached[activeLanguage]) {
+        return cached[activeLanguage];
+      }
+    }
+    return record[field] || '';
+  }
+
+  async function ensureTranslationsForRecords(records, fieldsToTranslate) {
+    if (activeLanguage === 'bs' || !Array.isArray(records) || !records.length) return false;
+    const pendingItems = [];
+    for (const record of records) {
+      if (!record || !record.id) continue;
+      const fields = {};
+      for (const field of fieldsToTranslate) {
+        const val = typeof record[field] === 'string' ? record[field].trim() : '';
+        if (!val) continue;
+        const hasStored = Boolean(record.translations?.[activeLanguage]?.[field]);
+        const cached = onDemandCache[`${record.id}:${field}`];
+        const hasCached = Boolean(cached && cached._source === val && cached[activeLanguage]);
+        if (!hasStored && !hasCached) {
+          fields[field] = val;
+        }
+      }
+      if (Object.keys(fields).length > 0) {
+        const flightKey = `${record.id}:${recordSourceSignature(fields)}`;
+        if (!inFlightTranslations.has(flightKey)) {
+          pendingItems.push({ record, fields, flightKey });
+        }
+      }
+    }
+
+    if (!pendingItems.length) return false;
+    pendingItems.forEach((item) => inFlightTranslations.add(item.flightKey));
+
+    try {
+      const results = await translateEntriesOnDemand(
+        pendingItems.map((item) => ({ id: item.record.id, fields: item.fields })),
+      );
+      pendingItems.forEach((item, index) => {
+        const translated = results[index];
+        if (!translated) return;
+        for (const [field, sourceVal] of Object.entries(item.fields)) {
+          const key = `${item.record.id}:${field}`;
+          onDemandCache[key] = {
+            _source: sourceVal,
+            en: translated.en?.[field] || '',
+            de: translated.de?.[field] || '',
+            it: translated.it?.[field] || '',
+          };
+        }
+      });
+      saveOnDemandCache();
+      return true;
+    } catch (error) {
+      console.warn('[TV Translation] On-demand translation skipped:', error?.message || error);
+      return false;
+    } finally {
+      pendingItems.forEach((item) => inFlightTranslations.delete(item.flightKey));
+    }
+  }
 
   const dataLoadNotice = document.getElementById('dataLoadNotice');
   const dataLoadIssues = new Set();
+  let currentHotelHeader = null;
   let hotelWelcomeText = '';
+  let cachedMarketingEntries = [];
+  let marketingInterval = null;
+  let marketingIndex = 0;
 
   function reportDataLoadIssue(message) {
     dataLoadIssues.add(message);
@@ -1158,15 +1723,28 @@
     dataLoadNotice.hidden = false;
   }
 
+  function applyHotelHeaderDisplay() {
+    if (!currentHotelHeader) return;
+    document.getElementById('hotelName').textContent = currentHotelHeader.name || '';
+    document.getElementById('hotelCity').textContent = tr(currentHotelHeader, 'city');
+    hotelWelcomeText = tr(currentHotelHeader, 'welcome_text');
+    document.getElementById('hotelContact').textContent = [currentHotelHeader.phone, currentHotelHeader.email].filter(Boolean).join(' • ');
+    const introHotelName = document.getElementById('introHotelName');
+    const introHotelCity = document.getElementById('introHotelCity');
+    if (introHotelName) introHotelName.textContent = currentHotelHeader.name || '';
+    if (introHotelCity) introHotelCity.textContent = tr(currentHotelHeader, 'city');
+  }
+
   async function initializeHotelHeader() {
     try {
       const hotel = await loadHotelHeader();
       if (!hotel) return;
-
-      document.getElementById('hotelName').textContent = hotel.name || '';
-      document.getElementById('hotelCity').textContent = hotel.city || '';
-      hotelWelcomeText = hotel.welcome_text || '';
-      document.getElementById('hotelContact').textContent = [hotel.phone, hotel.email].filter(Boolean).join(' • ');
+      currentHotelHeader = hotel;
+      applyHotelHeaderDisplay();
+      if (activeLanguage !== 'bs') {
+        const updated = await ensureTranslationsForRecords([hotel], ['welcome_text', 'city']);
+        if (updated) applyHotelHeaderDisplay();
+      }
     } catch (error) {
       console.error('Failed loading hotel header', error);
       reportDataLoadIssue(`Podaci hotela nisu učitani: ${error.message || 'nepoznata greška.'}`);
@@ -1185,11 +1763,12 @@
 
   function updateClock() {
     const now = new Date();
-    const time = now.toLocaleTimeString('bs-BA', {
+    const locale = ui().locale;
+    const time = now.toLocaleTimeString(locale, {
       hour: '2-digit',
       minute: '2-digit',
     });
-    const date = now.toLocaleDateString('bs-BA', {
+    const date = now.toLocaleDateString(locale, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -1241,7 +1820,7 @@
     const hotelWelcome = document.getElementById('hotelWelcome');
 
     if (guestName) {
-      welcomeTitle.textContent = `Dobrodošli, ${guestName}!`;
+      welcomeTitle.textContent = ui().welcomeGuest(guestName);
       hotelWelcome.textContent = hotelWelcomeText;
       return;
     }
@@ -1250,7 +1829,43 @@
     hotelWelcome.textContent = '';
   }
 
+  function applyStaticUiTranslations() {
+    const strings = ui();
+    const tileLabelMap = {
+      hotel: strings.tiles.hotel,
+      restaurant: strings.tiles.restaurant,
+      wellness: strings.tiles.wellness,
+      sport: strings.tiles.sport,
+      nearby: strings.tiles.nearby,
+      tv: strings.tiles.tv,
+      radio: strings.tiles.radio,
+    };
+    for (const [key, label] of Object.entries(tileLabelMap)) {
+      const tile = document.querySelector(`.tile[data-info="${key}"]`);
+      if (tile) {
+        tile.setAttribute('aria-label', label);
+        const labelEl = tile.querySelector('.tile-label');
+        if (labelEl) labelEl.textContent = label;
+      }
+    }
+    const marketingTile = document.querySelector('.tile[data-info="marketing"]');
+    if (marketingTile) {
+      marketingTile.setAttribute('aria-label', strings.tiles.marketing);
+      const mLabel = marketingTile.querySelector('.marketing-label');
+      if (mLabel) mLabel.textContent = strings.tiles.marketing;
+    }
+    const infoPowerBtn = document.getElementById('infoPowerButton');
+    if (infoPowerBtn) infoPowerBtn.textContent = strings.launchPowerTv;
+    const powerDownloadBtn = document.getElementById('powerDownloadBtn');
+    if (powerDownloadBtn) powerDownloadBtn.textContent = strings.downloadApk;
+    const powerInfoBtn = document.getElementById('powerInfoBtn');
+    if (powerInfoBtn) powerInfoBtn.textContent = strings.openHtmlTv;
+    const powerCloseBtn = document.getElementById('powerCloseBtn');
+    if (powerCloseBtn) powerCloseBtn.textContent = strings.close;
+  }
+
   updateClock();
+  applyStaticUiTranslations();
   setInterval(updateClock, 1000);
 
   // Map admin categories to TV tile data-info keys
@@ -1268,16 +1883,9 @@
   const tileToAdminCategory = Object.fromEntries(
     Object.entries(adminToTileKey).map(([adminKey, tileKey]) => [tileKey, adminKey]),
   );
-  const infoCategoryLabels = {
-    hotelinfo: 'Hotelske informacije',
-    marketing: 'Marketing',
-    restorani: 'Restorani i barovi',
-    wellness: 'Wellness & beauty centri',
-    sport: 'Sportske aktivnosti',
-    okolica: 'Zanimljivosti u okolici',
-    tv: 'TV kanali',
-    radio: 'Radio stanice',
-  };
+  function getCategoryLabel(category) {
+    return ui().categories[category] || '';
+  }
 
   // Build infoMap from admin data
   async function buildInfoMap() {
@@ -1359,7 +1967,7 @@
 
     const params = new URLSearchParams(window.location.search);
     const category = params.get('category');
-    if (!category || !infoCategoryLabels[category]) return;
+    if (!category || !getCategoryLabel(category)) return;
 
     event.preventDefault();
     if (params.has('article')) setInfoRoute(category);
@@ -1384,11 +1992,11 @@
 
   const openInfoPage = (key) => {
     const category = tileToAdminCategory[key] || key;
-    if (infoCategoryLabels[category]) setInfoRoute(category);
+    if (getCategoryLabel(category)) setInfoRoute(category);
   };
 
   function entryTitle(entry) {
-    return entry.title || entry.name || 'Sadržaj';
+    return tr(entry, 'title') || entry.name || ui().fallbackContent;
   }
 
   function entryImages(entry) {
@@ -1425,16 +2033,17 @@
     title.textContent = entryTitle(entry);
     copy.appendChild(title);
 
-    if (entry.subtitle) {
+    const translatedSubtitle = tr(entry, 'subtitle');
+    if (translatedSubtitle) {
       const subtitle = document.createElement('p');
       subtitle.className = 'info-entry-subtitle';
-      subtitle.textContent = entry.subtitle;
+      subtitle.textContent = translatedSubtitle;
       copy.appendChild(subtitle);
     }
 
     const description = document.createElement('p');
     description.className = 'info-entry-description';
-    description.textContent = entry.description || entry.value || '';
+    description.textContent = tr(entry, 'description') || tr(entry, 'value') || '';
     copy.appendChild(description);
     card.appendChild(copy);
     card.addEventListener('click', () => setInfoRoute(category, entry.id));
@@ -1470,7 +2079,7 @@
           const thumbnail = document.createElement('button');
           thumbnail.className = 'info-article-thumb';
           thumbnail.type = 'button';
-          thumbnail.setAttribute('aria-label', `Prikaži fotografiju ${index + 1} od ${images.length}`);
+          thumbnail.setAttribute('aria-label', ui().showPhoto(index + 1, images.length));
           thumbnail.setAttribute('aria-pressed', String(index === 0));
           const image = document.createElement('img');
           image.src = imageUrl;
@@ -1496,21 +2105,22 @@
     }
     const categoryLabel = document.createElement('p');
     categoryLabel.className = 'info-article-category';
-    categoryLabel.textContent = infoCategoryLabels[category] || '';
+    categoryLabel.textContent = getCategoryLabel(category);
     main.appendChild(categoryLabel);
     const title = document.createElement('h2');
     title.className = 'info-article-title';
     title.textContent = entryTitle(entry);
     main.appendChild(title);
 
-    if (entry.subtitle) {
+    const articleSubtitle = tr(entry, 'subtitle');
+    if (articleSubtitle) {
       const subtitle = document.createElement('p');
       subtitle.className = 'info-article-subtitle';
-      subtitle.textContent = entry.subtitle;
+      subtitle.textContent = articleSubtitle;
       main.appendChild(subtitle);
     }
 
-    const bodyText = entry.description || entry.value || '';
+    const bodyText = tr(entry, 'description') || tr(entry, 'value') || '';
     if (bodyText) {
       const body = document.createElement('p');
       body.className = 'info-article-body';
@@ -1524,12 +2134,13 @@
 
     const aside = document.createElement('aside');
     aside.className = 'info-article-aside';
-    if (entry.location) {
+    const articleLocation = tr(entry, 'location');
+    if (articleLocation) {
       const location = document.createElement('p');
       location.className = 'info-article-location';
       location.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>';
       const locationText = document.createElement('span');
-      locationText.textContent = entry.location;
+      locationText.textContent = articleLocation;
       location.appendChild(locationText);
       aside.appendChild(location);
     }
@@ -1610,7 +2221,7 @@
     copy.className = 'radio-player-copy';
     const eyebrow = document.createElement('p');
     eyebrow.className = 'radio-player-eyebrow';
-    eyebrow.textContent = 'SADA SVIRA';
+    eyebrow.textContent = ui().nowPlaying;
     const title = document.createElement('h2');
     title.className = 'radio-player-title';
     const frequency = document.createElement('p');
@@ -1624,7 +2235,7 @@
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     status.dataset.state = 'idle';
-    status.textContent = 'Spremno za reprodukciju.';
+    status.textContent = ui().readyToPlay;
     player.appendChild(status);
 
     const controls = document.createElement('div');
@@ -1632,17 +2243,17 @@
     const playButton = document.createElement('button');
     playButton.type = 'button';
     playButton.className = 'radio-control-button';
-    playButton.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>Pokreni</span>';
+    playButton.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>${ui().play}</span>`;
     const muteButton = document.createElement('button');
     muteButton.type = 'button';
     muteButton.className = 'radio-control-button secondary';
-    muteButton.textContent = 'Utišaj';
+    muteButton.textContent = ui().mute;
     muteButton.setAttribute('aria-pressed', 'false');
     const volumeGroup = document.createElement('label');
     volumeGroup.className = 'radio-volume-group';
     const volumeLabel = document.createElement('span');
     volumeLabel.className = 'radio-volume-label';
-    volumeLabel.textContent = 'Jačina';
+    volumeLabel.textContent = ui().volume;
     const volume = document.createElement('input');
     volume.className = 'radio-volume';
     volume.type = 'range';
@@ -1650,12 +2261,12 @@
     volume.max = '1';
     volume.step = '0.05';
     volume.value = '0.7';
-    volume.setAttribute('aria-label', 'Jačina zvuka');
+    volume.setAttribute('aria-label', ui().volume);
     volumeGroup.append(volumeLabel, volume);
     const retryButton = document.createElement('button');
     retryButton.type = 'button';
     retryButton.className = 'radio-control-button secondary';
-    retryButton.textContent = 'Ponovo poveži';
+    retryButton.textContent = ui().reconnect;
     retryButton.hidden = true;
     controls.append(playButton, muteButton, volumeGroup, retryButton);
     player.appendChild(controls);
@@ -1664,7 +2275,7 @@
     if (stations.length > 1) {
       const stationList = document.createElement('div');
       stationList.className = 'radio-station-list';
-      stationList.setAttribute('aria-label', 'Odaberi radio stanicu');
+      stationList.setAttribute('aria-label', ui().categories.radio);
       stations.forEach((station, index) => {
         const choice = document.createElement('button');
         choice.type = 'button';
@@ -1680,7 +2291,7 @@
 
     const hint = document.createElement('p');
     hint.className = 'radio-player-hint';
-    hint.textContent = 'Odaberite Pokreni za reprodukciju. Zvuk se neće pokrenuti automatski.';
+    hint.textContent = ui().radioHint;
     player.appendChild(hint);
 
     const audio = document.createElement('audio');
@@ -1700,14 +2311,15 @@
       retryButton.hidden = state !== 'error';
       const playing = state === 'playing';
       playButton.innerHTML = playing
-        ? '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z"/></svg><span>Pauziraj</span>'
-        : '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>Pokreni</span>';
+        ? `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM15 5h4v14h-4z"/></svg><span>${ui().pause}</span>`
+        : `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>${ui().play}</span>`;
     }
 
     function updateStationDisplay() {
       title.textContent = entryTitle(selectedStation);
-      frequency.textContent = selectedStation.value && !/^https?:\/\//i.test(selectedStation.value)
-        ? selectedStation.value
+      const stationVal = tr(selectedStation, 'value');
+      frequency.textContent = stationVal && !/^https?:\/\//i.test(stationVal)
+        ? stationVal
         : '';
       artwork.querySelector('img')?.remove();
       const imageUrl = entryImages(selectedStation)[0];
@@ -1722,8 +2334,8 @@
       });
       playButton.disabled = !radioStreamUrl(selectedStation);
       retryButton.disabled = playButton.disabled;
-      if (playButton.disabled) setStatus('Stream adresa nije podešena u admin panelu.', 'error');
-      else setStatus('Spremno za reprodukciju.', 'idle');
+      if (playButton.disabled) setStatus(ui().streamMissing, 'error');
+      else setStatus(ui().readyToPlay, 'idle');
     }
 
     function selectStation(index) {
@@ -1732,53 +2344,53 @@
       selectedIndex = index;
       selectedStation = stations[index];
       updateStationDisplay();
-      if (wasPlaying) setStatus('Stanica je promijenjena. Pritisnite Pokreni.', 'idle');
+      if (wasPlaying) setStatus(ui().stationChanged, 'idle');
     }
 
     async function startPlayback() {
       const streamUrl = radioStreamUrl(selectedStation);
       if (!streamUrl) {
-        setStatus('Stream adresa nije podešena u admin panelu.', 'error');
+        setStatus(ui().streamMissing, 'error');
         return;
       }
       if (audio.src !== streamUrl) audio.src = streamUrl;
       audio.load();
-      setStatus('Povezivanje sa stanicom…', 'loading');
+      setStatus(ui().connecting, 'loading');
       try {
         await audio.play();
       } catch (error) {
         console.error('Radio stream playback failed', error);
-        setStatus('Reprodukcija nije uspjela. Provjerite vezu ili pokušajte ponovo.', 'error');
+        setStatus(ui().playbackFailed, 'error');
       }
     }
 
-    audio.addEventListener('playing', () => setStatus('Reprodukcija je aktivna.', 'playing'));
+    audio.addEventListener('playing', () => setStatus(ui().playbackActive, 'playing'));
     audio.addEventListener('pause', () => {
-      if (status.dataset.state === 'playing') setStatus('Reprodukcija je pauzirana.', 'paused');
+      if (status.dataset.state === 'playing') setStatus(ui().playbackPaused, 'paused');
     });
-    audio.addEventListener('waiting', () => setStatus('Učitavanje audio streama…', 'loading'));
+    audio.addEventListener('waiting', () => setStatus(ui().loadingStream, 'loading'));
     audio.addEventListener('error', () => {
-      setStatus('Stream nije dostupan. Pokušajte ponovo povezati.', 'error');
+      setStatus(ui().streamUnavailable, 'error');
     });
     playButton.addEventListener('click', () => {
       if (audio.paused) {
         startPlayback();
       } else {
         audio.pause();
-        setStatus('Reprodukcija je pauzirana.', 'paused');
+        setStatus(ui().playbackPaused, 'paused');
       }
     });
     retryButton.addEventListener('click', startPlayback);
     muteButton.addEventListener('click', () => {
       audio.muted = !audio.muted;
-      muteButton.textContent = audio.muted ? 'Uključi zvuk' : 'Utišaj';
+      muteButton.textContent = audio.muted ? ui().unmute : ui().mute;
       muteButton.setAttribute('aria-pressed', String(audio.muted));
     });
     volume.addEventListener('input', () => {
       audio.volume = Number(volume.value);
       if (audio.volume > 0 && audio.muted) {
         audio.muted = false;
-        muteButton.textContent = 'Utišaj';
+        muteButton.textContent = ui().mute;
         muteButton.setAttribute('aria-pressed', 'false');
       }
     });
@@ -1830,18 +2442,21 @@
     const infoPowerButton = document.getElementById('infoPowerButton');
 
     stopRadioPlayback();
-    if (!category || !infoCategoryLabels[category]) {
+    if (!category || !getCategoryLabel(category)) {
       infoPage.hidden = true;
-      document.querySelector('.tv-frame').style.display = '';
+      document.querySelector('.tv-frame').style.display = introVisible ? 'none' : '';
       return;
     }
 
+    introVisible = false;
+    const introEl = document.getElementById('languageIntroScreen');
+    if (introEl) introEl.hidden = true;
     document.querySelector('.tv-frame').style.display = 'none';
     infoPage.hidden = false;
     infoPage.classList.toggle('article-view', Boolean(articleId));
-    document.getElementById('infoCategoryLabel').textContent = infoCategoryLabels[category];
-    document.getElementById('infoPageTitle').textContent = articleId ? 'Članak' : 'Svi članci';
-    document.getElementById('infoBackLabel').textContent = articleId ? 'Nazad' : 'Početna';
+    document.getElementById('infoCategoryLabel').textContent = getCategoryLabel(category);
+    document.getElementById('infoPageTitle').textContent = articleId ? ui().article : ui().allArticles;
+    document.getElementById('infoBackLabel').textContent = articleId ? ui().back : ui().home;
     renderInfoGuestHeader();
     infoPowerButton.hidden = category !== 'tv' || Boolean(articleId);
 
@@ -1850,48 +2465,64 @@
     content.replaceChildren();
     const loading = document.createElement('p');
     loading.className = 'info-empty';
-    loading.textContent = 'Učitavanje članaka…';
+    loading.textContent = ui().loadingArticles;
     content.appendChild(loading);
 
     const requestId = ++infoPageRequest;
     const entries = await loadAdminEntries(category);
     if (requestId !== infoPageRequest) return;
-    content.replaceChildren();
 
-    if (category === 'radio') {
-      document.getElementById('infoPageTitle').textContent = 'Radio player';
-      content.className = 'radio-player-content';
-      const player = renderRadioPlayer(entries);
-      content.appendChild(player);
-      player.querySelector('.radio-control-button')?.focus();
-      return;
-    }
+    const renderInfoEntries = (list) => {
+      content.replaceChildren();
 
-    if (articleId) {
-      const entry = entries.find((item) => String(item.id) === articleId);
-      if (entry) {
-        document.getElementById('infoPageTitle').textContent = entryTitle(entry);
-        content.className = '';
-        content.appendChild(renderArticle(entry, category));
-      } else {
+      if (category === 'radio') {
+        document.getElementById('infoPageTitle').textContent = ui().radioPlayer;
+        content.className = 'radio-player-content';
+        const player = renderRadioPlayer(list);
+        content.appendChild(player);
+        player.querySelector('.radio-control-button')?.focus();
+        return;
+      }
+
+      if (articleId) {
+        const entry = list.find((item) => String(item.id) === articleId);
+        if (entry) {
+          document.getElementById('infoPageTitle').textContent = entryTitle(entry);
+          content.className = '';
+          content.appendChild(renderArticle(entry, category));
+        } else {
+          const empty = document.createElement('p');
+          empty.className = 'info-empty';
+          empty.textContent = ui().articleNotFound;
+          content.appendChild(empty);
+        }
+        return;
+      }
+
+      document.getElementById('infoPageTitle').textContent = ui().allArticles;
+      if (!list.length) {
         const empty = document.createElement('p');
         empty.className = 'info-empty';
-        empty.textContent = 'Članak nije pronađen.';
+        empty.textContent = ui().noArticles;
         content.appendChild(empty);
+        return;
       }
-      return;
-    }
 
-    document.getElementById('infoPageTitle').textContent = 'Svi članci';
-    if (!entries.length) {
-      const empty = document.createElement('p');
-      empty.className = 'info-empty';
-      empty.textContent = 'Nema objavljenih članaka za ovu kategoriju.';
-      content.appendChild(empty);
-      return;
-    }
+      list.forEach((entry) => content.appendChild(createEntryCard(entry, category)));
+    };
 
-    entries.forEach((entry) => content.appendChild(createEntryCard(entry, category)));
+    renderInfoEntries(entries);
+
+    if (activeLanguage !== 'bs' && entries.length) {
+      const fields = category === 'tv' || category === 'radio'
+        ? ['value']
+        : ['title', 'subtitle', 'description', 'location', 'notes'];
+      const translatedAny = await ensureTranslationsForRecords(entries, fields);
+      if (translatedAny && requestId === infoPageRequest) {
+        if (category === 'radio' && radioAudio && !radioAudio.paused) return;
+        renderInfoEntries(entries);
+      }
+    }
   }
 
   document.getElementById('infoBackButton').addEventListener('click', () => {
@@ -1957,10 +2588,25 @@
     wrap?.tile.focus();
   }
 
+  function moveIntroFocus(direction) {
+    const cards = Array.from(document.querySelectorAll('#languageIntroScreen [data-intro-language]'));
+    if (!cards.length) return;
+    const currentIndex = cards.indexOf(document.activeElement);
+    if (currentIndex < 0) {
+      cards[0].focus();
+      return;
+    }
+    const cols = window.innerWidth <= 860 ? 2 : 4;
+    let nextIndex = currentIndex;
+    if (direction === 'right') nextIndex = (currentIndex + 1) % cards.length;
+    else if (direction === 'left') nextIndex = (currentIndex - 1 + cards.length) % cards.length;
+    else if (direction === 'down') nextIndex = (currentIndex + cols) % cards.length;
+    else if (direction === 'up') nextIndex = (currentIndex - cols + cards.length) % cards.length;
+    cards[nextIndex]?.focus();
+  }
+
   document.addEventListener('keydown', (event) => {
     if (document.querySelector('.power-modal.open')) return;
-    if (document.querySelector('.info-page:not([hidden])')) return;
-
     const directions = {
       ArrowLeft: 'left',
       ArrowRight: 'right',
@@ -1968,43 +2614,64 @@
       ArrowDown: 'down',
     };
     const direction = directions[event.key];
-    if (direction) {
+    if (!direction) return;
+
+    if (introVisible) {
       event.preventDefault();
-      moveHomeTileFocus(direction);
+      moveIntroFocus(direction);
+      return;
     }
+    if (document.querySelector('.info-page:not([hidden])')) return;
+
+    event.preventDefault();
+    moveHomeTileFocus(direction);
   });
 
-  async function initializeMarketingPanel() {
+  function renderMarketingSlide() {
     const marketingTile = document.getElementById('marketingPanelInner');
     const marketingTitle = document.getElementById('marketingTitle');
     const marketingText = document.getElementById('marketingText');
     if (!marketingTile || !marketingTitle || !marketingText) return;
 
-    const entries = await loadAdminEntries('marketing');
-    const activeEntries = entries.filter((entry) => entry.title || entry.notes || entry.image || entry.url);
-    if (!activeEntries.length) {
+    if (!cachedMarketingEntries.length) {
       marketingTile.style.backgroundImage = '';
       marketingTitle.textContent = '';
       marketingText.textContent = '';
       return;
     }
 
-    let index = 0;
-    const renderMarketing = () => {
-      const item = activeEntries[index % activeEntries.length];
-      const image = item.image || item.url;
-      marketingTitle.textContent = item.title || 'Marketing';
-      marketingText.textContent = item.notes || item.description || 'Posebna ponuda za goste.';
-      marketingTile.style.backgroundImage = image
-        ? `linear-gradient(180deg, rgba(10,8,14,0.15) 25%, rgba(10,8,14,0.85) 100%), url('${image}')`
-        : 'linear-gradient(160deg, rgba(86,64,101,0.8), rgba(35,29,40,0.95))';
-      marketingTile.style.backgroundSize = 'cover';
-      marketingTile.style.backgroundPosition = 'center';
-      index += 1;
-    };
+    const item = cachedMarketingEntries[marketingIndex % cachedMarketingEntries.length];
+    const image = item.image || item.url;
+    marketingTitle.textContent = tr(item, 'title') || getCategoryLabel('marketing');
+    marketingText.textContent = tr(item, 'notes') || tr(item, 'description') || ui().defaultOffer;
+    marketingTile.style.backgroundImage = image
+      ? `linear-gradient(180deg, rgba(10,8,14,0.15) 25%, rgba(10,8,14,0.85) 100%), url('${image}')`
+      : 'linear-gradient(160deg, rgba(86,64,101,0.8), rgba(35,29,40,0.95))';
+    marketingTile.style.backgroundSize = 'cover';
+    marketingTile.style.backgroundPosition = 'center';
+  }
 
-    renderMarketing();
-    setInterval(renderMarketing, 5000);
+  async function initializeMarketingPanel() {
+    const entries = await loadAdminEntries('marketing');
+    cachedMarketingEntries = entries.filter((entry) => entry.title || entry.notes || entry.image || entry.url);
+    marketingIndex = 0;
+
+    if (marketingInterval) {
+      clearInterval(marketingInterval);
+      marketingInterval = null;
+    }
+
+    renderMarketingSlide();
+    if (cachedMarketingEntries.length > 0) {
+      marketingInterval = setInterval(() => {
+        marketingIndex += 1;
+        renderMarketingSlide();
+      }, 5000);
+      if (activeLanguage !== 'bs') {
+        const translatedAny = await ensureTranslationsForRecords(cachedMarketingEntries, ['title', 'notes', 'description']);
+        if (translatedAny) renderMarketingSlide();
+      }
+    }
   }
 
   // Initialize tiles after loading admin data
@@ -2061,9 +2728,118 @@
     });
   }
 
+  function syncLanguageButtons() {
+    document.querySelectorAll('.tv-lang-switch button').forEach((button) => {
+      const isActive = button.dataset.language === activeLanguage;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-pressed', String(isActive));
+    });
+    document.querySelectorAll('[data-intro-language]').forEach((card) => {
+      card.classList.toggle('active', card.dataset.introLanguage === activeLanguage);
+    });
+  }
+
+  function applyIntroScreenVisibility() {
+    const introEl = document.getElementById('languageIntroScreen');
+    const tvFrame = document.querySelector('.tv-frame');
+    if (introEl) introEl.hidden = !introVisible;
+    if (tvFrame) {
+      const infoPage = document.getElementById('infoPage');
+      const infoOpen = infoPage && !infoPage.hidden;
+      tvFrame.style.display = introVisible || infoOpen ? 'none' : '';
+    }
+    if (introVisible && introEl) {
+      const target = introEl.querySelector(`[data-intro-language="${activeLanguage}"]`) || introEl.querySelector('[data-intro-language]');
+      target?.focus();
+    }
+  }
+
+  async function setLanguage(language, options = {}) {
+    if (!SUPPORTED_LANGUAGES.includes(language)) return;
+    activeLanguage = language;
+    localStorage.setItem('tvLanguage', language);
+    try {
+      sessionStorage.setItem('tvLanguageChosen', '1');
+    } catch {
+      // ignore storage errors
+    }
+    document.documentElement.lang = language;
+
+    const params = new URLSearchParams(window.location.search);
+    if (language === 'bs') params.delete('lang');
+    else params.set('lang', language);
+    const nextUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}${window.location.hash}`;
+    window.history.replaceState({}, '', nextUrl);
+
+    if (options.fromIntro) {
+      introVisible = false;
+      applyIntroScreenVisibility();
+      const firstTile = document.querySelector('.grid .tile[data-info]');
+      firstTile?.focus();
+    }
+
+    syncLanguageButtons();
+    applyStaticUiTranslations();
+    updateClock();
+    applyHotelHeaderDisplay();
+    renderWelcomeMessage();
+    renderMarketingSlide();
+
+    const infoPage = document.getElementById('infoPage');
+    const infoVisible = infoPage && !infoPage.hidden;
+    const isPlayingRadio = Boolean(radioAudio && !radioAudio.paused);
+    if (infoVisible && !isPlayingRadio) {
+      renderInfoPage();
+    }
+
+    if (language !== 'bs') {
+      const promises = [];
+      if (currentHotelHeader) {
+        promises.push(
+          ensureTranslationsForRecords([currentHotelHeader], ['welcome_text', 'city']).then((changed) => {
+            if (changed) {
+              applyHotelHeaderDisplay();
+              renderWelcomeMessage();
+            }
+          }),
+        );
+      }
+      if (cachedMarketingEntries.length) {
+        promises.push(
+          ensureTranslationsForRecords(cachedMarketingEntries, ['title', 'notes', 'description']).then((changed) => {
+            if (changed) renderMarketingSlide();
+          }),
+        );
+      }
+      await Promise.all(promises);
+    }
+  }
+
+  document.querySelectorAll('.tv-lang-switch button').forEach((button) => {
+    button.addEventListener('click', () => setLanguage(button.dataset.language));
+  });
+  document.querySelectorAll('[data-intro-language]').forEach((card) => {
+    card.addEventListener('click', () => setLanguage(card.dataset.introLanguage, { fromIntro: true }));
+  });
+  syncLanguageButtons();
+  applyIntroScreenVisibility();
+
+  async function refreshConsoleLive() {
+    await initializeTiles();
+    const infoPage = document.getElementById('infoPage');
+    if (infoPage && !infoPage.hidden) {
+      const isPlayingRadio = Boolean(radioAudio && !radioAudio.paused);
+      if (!isPlayingRadio) {
+        await renderInfoPage();
+      }
+    }
+  }
+
   initializeTiles();
   renderInfoPage();
-  setInterval(initializeTiles, 1000 * 30);
+  subscribeToHotelUpdates(() => {
+    refreshConsoleLive();
+  });
 </script>
 
 </body>
