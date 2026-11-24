@@ -463,26 +463,120 @@ function isUuid(value) {
   return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }
 
-function getTvPairingCode() {
-  const bridge = typeof window !== 'undefined' ? window.HotelTvAndroid : null
-  if (!bridge || typeof bridge.getPairingCode !== 'function') return null
+const WEB_PAIRING_CODE_KEY = 'bookroom_tv_pairing_code'
 
-  const code = bridge.getPairingCode().trim().toLowerCase()
-  return /^[0-9a-f]{32}$/.test(code) ? code : null
+function normalizePairingCode(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : ''
+}
+
+function isValidPairingCode(value) {
+  const normalized = normalizePairingCode(value)
+  return normalized.length >= 4 && normalized.length <= 64
+}
+
+function normalizeRoomNumber(value) {
+  return typeof value === 'string' ? value.trim().toLowerCase() : ''
+}
+
+export function isSupabaseConfigured() {
+  return Boolean(supabase)
+}
+
+export function hasAndroidTvBridge() {
+  const bridge = typeof window !== 'undefined' ? window.HotelTvAndroid : null
+  return Boolean(bridge && typeof bridge.getPairingCode === 'function')
+}
+
+export function setWebTvPairingCode(code) {
+  const normalized = normalizePairingCode(code)
+  if (!isValidPairingCode(normalized)) {
+    throw new Error('Lozinka / kod za uparivanje mora imati između 4 i 64 znaka.')
+  }
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.setItem(WEB_PAIRING_CODE_KEY, normalized)
+  }
+  tvConsoleDataCache = null
+  tvConsoleDataCacheCode = ''
+  tvConsoleDataCacheTime = 0
+  return normalized
+}
+
+export function clearWebTvPairingCode() {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.removeItem(WEB_PAIRING_CODE_KEY)
+  }
+  tvConsoleDataCache = null
+  tvConsoleDataCacheCode = ''
+  tvConsoleDataCacheTime = 0
+}
+
+function getTvPairingCode() {
+  if (typeof window === 'undefined') return null
+
+  const bridge = window.HotelTvAndroid
+  if (bridge && typeof bridge.getPairingCode === 'function') {
+    const code = normalizePairingCode(bridge.getPairingCode())
+    return isValidPairingCode(code) ? code : null
+  }
+
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const fromUrl = params.get('pairing') || params.get('code') || ''
+    if (isValidPairingCode(fromUrl)) {
+      const normalized = normalizePairingCode(fromUrl)
+      window.localStorage?.setItem(WEB_PAIRING_CODE_KEY, normalized)
+      params.delete('pairing')
+      params.delete('code')
+      const nextUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}${window.location.hash}`
+      window.history?.replaceState?.({}, '', nextUrl)
+      return normalized
+    }
+  } catch {
+    // ignore URL / storage failures
+  }
+
+  try {
+    const stored = normalizePairingCode(window.localStorage?.getItem(WEB_PAIRING_CODE_KEY) || '')
+    return isValidPairingCode(stored) ? stored : null
+  } catch {
+    return null
+  }
+}
+
+export function getCurrentTvPairingCode() {
+  return getTvPairingCode()
 }
 
 async function hashTvPairingCode(code) {
-  const bytes = new TextEncoder().encode(code)
+  const bytes = new TextEncoder().encode(normalizePairingCode(code))
   const digest = await crypto.subtle.digest('SHA-256', bytes)
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 let tvConsoleDataCache = null
+let tvConsoleDataCacheCode = ''
 let tvConsoleDataCacheTime = 0
 
-async function loadTvConsoleData(forceRefresh = false) {
+function formatTvPairingErrorMessage(error, data) {
+  const raw = String(error?.message || error?.details || '').toLowerCase()
+  if (raw.includes('invalid or revoked tv pairing code') || raw.includes('invalid tv pairing code')) {
+    return 'Kod ili lozinka za uparivanje nije ispravna ili je opozvana.'
+  }
+  if (raw.includes('failed to fetch') || raw.includes('networkerror') || raw.includes('load failed')) {
+    return 'Nema konekcije sa bazom podataka. Provjerite internet vezu na TV-u.'
+  }
+  if (raw.includes('function') && raw.includes('get_tv_console_data')) {
+    return 'U Supabase bazi nedostaje migracija za TV uparivanje (get_tv_console_data).'
+  }
+  if (!error && (!data || !data.hotel)) {
+    return 'Hotel za ovaj kod nije pronađen u bazi.'
+  }
+  return 'TV nije povezan s hotelskim podacima. Provjeri internet, kod za uparivanje i Supabase migraciju.'
+}
+
+async function loadTvConsoleData(forceRefresh = false, { silentOnError = false } = {}) {
   const code = getTvPairingCode()
-  if (!code) throw new Error('TV nije uparen. Unesite kod za uparivanje na TV-u.')
+  if (!code) throw new Error('TV nije uparen. Unesite kod ili lozinku za uparivanje na TV-u.')
 
   if (!supabase) {
     const store = readLocalStore()
@@ -497,15 +591,28 @@ async function loadTvConsoleData(forceRefresh = false) {
         )
         const today = todayIso(0)
         const booking = (store.bookings[hotelId] || []).find(
-          (b) => b.room === pairing.room_number && b.checkIn <= today && b.checkOut >= today,
+          (b) =>
+            normalizeRoomNumber(b.room) === normalizeRoomNumber(pairing.room_number) &&
+            b.checkIn <= today &&
+            b.checkOut >= today,
         ) || null
-        return { hotel, entries, booking }
+        return { room: pairing.room_number, hotel, entries, booking }
       }
     }
-    throw new Error('Kod za uparivanje nije važeći ili je opozvan.')
+    const msg = 'Kod ili lozinka za uparivanje nije važeća ili je opozvana.'
+    if (!silentOnError) {
+      const bridge = typeof window !== 'undefined' ? window.HotelTvAndroid : null
+      bridge?.showPairingError?.(msg)
+    }
+    throw new Error(msg)
   }
 
-  if (!forceRefresh && tvConsoleDataCache && Date.now() - tvConsoleDataCacheTime < 4000) {
+  if (
+    !forceRefresh &&
+    tvConsoleDataCache &&
+    tvConsoleDataCacheCode === code &&
+    Date.now() - tvConsoleDataCacheTime < 4000
+  ) {
     return tvConsoleDataCache
   }
 
@@ -514,19 +621,26 @@ async function loadTvConsoleData(forceRefresh = false) {
     pairing_code_hash: codeHash,
   })
   if (error || !data || !data.hotel) {
-    const bridge = typeof window !== 'undefined' ? window.HotelTvAndroid : null
-    bridge?.showPairingError?.('TV nije povezan s hotelskim podacima. Provjeri internet, kod za uparivanje i Supabase migraciju.')
-    throw error || new Error('Kod za uparivanje nije važeći ili je opozvan.')
+    const friendlyMessage = formatTvPairingErrorMessage(error, data)
+    const raw = String(error?.message || '').toLowerCase()
+    const isCodeInvalid = raw.includes('invalid or revoked tv pairing code') || raw.includes('invalid tv pairing code')
+    if (!silentOnError || isCodeInvalid) {
+      const bridge = typeof window !== 'undefined' ? window.HotelTvAndroid : null
+      bridge?.showPairingError?.(friendlyMessage)
+    }
+    throw new Error(friendlyMessage)
   }
 
   tvConsoleDataCache = data
+  tvConsoleDataCacheCode = code
   tvConsoleDataCacheTime = Date.now()
   return data
 }
 
 function generateTvPairingCode() {
-  const bytes = crypto.getRandomValues(new Uint8Array(16))
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase()
+  const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
+  const bytes = crypto.getRandomValues(new Uint8Array(8))
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('')
 }
 
 function isMissingTranslationsColumnError(error) {
@@ -609,16 +723,27 @@ async function prepareModuleEntryTranslations(moduleName, entries, existingById)
   return { entries: nextEntries, translationError }
 }
 
-export async function createTvPairing(roomNumber) {
+export async function createTvPairing(roomNumber, customCode = '') {
   const room = roomNumber.trim()
   if (!room) throw new Error('Broj sobe je obavezan.')
 
-  const code = generateTvPairingCode()
-  const codeHash = await hashTvPairingCode(code.toLowerCase())
+  const rawCustom = typeof customCode === 'string' ? customCode.trim() : ''
+  if (rawCustom && !isValidPairingCode(rawCustom)) {
+    throw new Error('Lozinka / kod za uparivanje mora imati između 4 i 64 znaka.')
+  }
+
+  const code = rawCustom || generateTvPairingCode()
+  const codeHash = await hashTvPairingCode(code)
 
   if (!supabase) {
     const store = readLocalStore()
     const hotelId = await getHotelId()
+    const duplicate = Object.values(store.pairings || {})
+      .flat()
+      .some((item) => item.code_hash === codeHash && !item.revoked_at)
+    if (duplicate) {
+      throw new Error('Ova lozinka / kod za uparivanje je već zauzeta. Unesite drugu lozinku.')
+    }
     const pairing = {
       id: createId(),
       hotel_id: hotelId,
@@ -629,7 +754,13 @@ export async function createTvPairing(roomNumber) {
     }
     store.pairings[hotelId] = [pairing, ...(store.pairings[hotelId] || [])]
     writeLocalStore(store)
-    return { id: pairing.id, room_number: pairing.room_number, created_at: pairing.created_at, code }
+    return {
+      id: pairing.id,
+      room_number: pairing.room_number,
+      created_at: pairing.created_at,
+      code,
+      isCustom: Boolean(rawCustom),
+    }
   }
 
   const hotelId = await getHotelId()
@@ -643,8 +774,13 @@ export async function createTvPairing(roomNumber) {
     .select('id, room_number, created_at')
     .single()
 
-  if (error) throw error
-  return { ...data, code }
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('Ova lozinka / kod za uparivanje je već zauzeta. Dodajte npr. naziv hotela ili drugi broj.')
+    }
+    throw error
+  }
+  return { ...data, code, isCustom: Boolean(rawCustom) }
 }
 
 export async function loadTvPairings() {
@@ -691,6 +827,25 @@ export async function revokeTvPairing(pairingId) {
     .eq('hotel_id', hotelId)
     .eq('id', pairingId)
     .is('revoked_at', null)
+
+  if (error) throw error
+}
+
+export async function deleteTvPairing(pairingId) {
+  if (!supabase) {
+    const store = readLocalStore()
+    const hotelId = await getHotelId()
+    store.pairings[hotelId] = (store.pairings[hotelId] || []).filter((item) => item.id !== pairingId)
+    writeLocalStore(store)
+    return
+  }
+
+  const hotelId = await getHotelId()
+  const { error } = await supabase
+    .from('tv_console_pairings')
+    .delete()
+    .eq('hotel_id', hotelId)
+    .eq('id', pairingId)
 
   if (error) throw error
 }
@@ -1162,6 +1317,12 @@ export async function saveModuleEntries(moduleName, entries) {
   return { entries: translatedEntries, translationError }
 }
 
+export async function loadTvRoom() {
+  if (!getTvPairingCode()) return ''
+  const data = await loadTvConsoleData()
+  return data.room || data.booking?.room || ''
+}
+
 export async function loadBookings() {
   if (getTvPairingCode()) {
     const data = await loadTvConsoleData()
@@ -1314,7 +1475,7 @@ export function subscribeToHotelUpdates(onUpdate) {
   const timer = setInterval(async () => {
     if (supabase && getTvPairingCode()) {
       try {
-        const fresh = await loadTvConsoleData(true)
+        const fresh = await loadTvConsoleData(true, { silentOnError: true })
         const snapshotHash = JSON.stringify(fresh)
         if (snapshotHash !== lastSnapshotHash) {
           lastSnapshotHash = snapshotHash

@@ -196,12 +196,11 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
         }
         pairingCodeInput = EditText(this).apply {
-            hint = "32-znakovni kod iz admin panela"
+            hint = "Lozinka ili kod za uparivanje (min. 4 znaka)"
             textSize = 18f
             setTextColor(Color.WHITE)
             setHintTextColor(Color.LTGRAY)
             inputType = InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS or
                 InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
             isSingleLine = true
             isFocusable = true
@@ -213,8 +212,8 @@ class MainActivity : Activity() {
             isFocusableInTouchMode = true
             setOnClickListener {
                 val code = pairingCodeInput.text.toString().trim().lowercase()
-                if (!Regex("^[0-9a-f]{32}$").matches(code)) {
-                    pairingErrorText.text = "Kod mora imati 32 znaka (slova A–F i brojevi 0–9)."
+                if (code.length !in 4..64) {
+                    pairingErrorText.text = "Lozinka / kod mora imati između 4 i 64 znaka."
                     pairingCodeInput.requestFocus()
                     return@setOnClickListener
                 }
@@ -224,6 +223,7 @@ class MainActivity : Activity() {
                     .putString(PAIRING_CODE_KEY, code)
                     .apply()
                 pairingErrorText.text = ""
+                webView.clearCache(false)
                 loadConsole()
                 maybePromptOverlayPermissionOnce()
             }
@@ -247,7 +247,7 @@ class MainActivity : Activity() {
             )
             addView(
                 TextView(this@MainActivity).apply {
-                    text = "U admin panelu otvori „Uparivanje TV-a“, napravi kod za ovu sobu i unesi ga ispod."
+                    text = "U admin panelu otvori „Uparivanje TV-a“, napravi lozinku ili kod za ovu sobu i unesi ga ispod."
                     textSize = 18f
                     setTextColor(Color.LTGRAY)
                     gravity = Gravity.CENTER

@@ -465,7 +465,7 @@
  
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-import { getAdminContext, loadHotelHeader, loadModuleEntries, saveHotelHeader, saveModuleEntries, loadBookings, saveBookings, signInAdmin, signOutAdmin, signUpAdmin, sendPowerTvCommand, subscribeToCommand, createTvPairing, loadTvPairings, revokeTvPairing } from './src/lib/adminStorage.js'
+import { getAdminContext, loadHotelHeader, loadModuleEntries, saveHotelHeader, saveModuleEntries, loadBookings, saveBookings, signInAdmin, signOutAdmin, signUpAdmin, sendPowerTvCommand, subscribeToCommand, createTvPairing, loadTvPairings, revokeTvPairing, deleteTvPairing, isSupabaseConfigured } from './src/lib/adminStorage.js'
 
 const ICONS = {
   hotelinfo: '<path d="M4 21V9l8-6 8 6v12"/><path d="M9 21v-6h6v6"/>',
@@ -644,9 +644,29 @@ async function renderHotelHeader(){
   }
 }
 
-async function renderTvPairings(generatedCode = '', generatedRoom = ''){
+const recentGeneratedPairings = [];
+
+function formatPairingDate(iso){
+  if(!iso) return '';
+  try{
+    return new Date(iso).toLocaleString('bs-BA', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }catch{
+    return '';
+  }
+}
+
+async function renderTvPairings(generatedPairing = null){
+  if(generatedPairing && generatedPairing.code){
+    recentGeneratedPairings.unshift({
+      id: generatedPairing.id || String(Date.now()),
+      room: generatedPairing.room_number || '',
+      code: generatedPairing.code,
+      isCustom: Boolean(generatedPairing.isCustom),
+    });
+  }
+
   document.getElementById('catTitle').textContent = 'Uparivanje TV-a';
-  document.getElementById('catSub').textContent = 'Poveži TV konzolu sa sobom da bi prikazivala podatke iz admin panela.';
+  document.getElementById('catSub').textContent = 'Svaki TV ima svoj kod ili lozinku za svoju sobu. Možete imati neograničeno TV uređaja na jednom admin nalogu.';
   document.getElementById('addBtn').style.display = 'none';
   const container = document.getElementById('entryContainer');
   container.innerHTML = '<div class="loading">Učitavanje…</div>';
@@ -656,7 +676,7 @@ async function renderTvPairings(generatedCode = '', generatedRoom = ''){
   try{
     pairings = await loadTvPairings();
   }catch(error){
-    if(!generatedCode){
+    if(!recentGeneratedPairings.length){
       container.innerHTML = '<div class="empty-state"><p>Nije moguće učitati uparene TV uređaje.</p></div>';
       setStatus(error.message || 'Greška pri učitavanju uparivanja', 'err');
       console.error('Failed loading TV pairings', error);
@@ -668,68 +688,128 @@ async function renderTvPairings(generatedCode = '', generatedRoom = ''){
 
   try{
     const pairingRows = pairings.length
-      ? pairings.map((pairing) => `
+      ? pairings.map((pairing) => {
+        const createdText = formatPairingDate(pairing.created_at);
+        const statusText = pairing.revoked_at ? 'Uparivanje opozvano' : 'Aktivno uparivanje';
+        return `
         <div class="entry-card">
           <div class="entry-body">
             <div class="entry-title">Soba ${escapeHtml(pairing.room_number)}</div>
-            <div class="entry-sub">${pairing.revoked_at ? 'Uparivanje opozvano' : 'Aktivno uparivanje'}</div>
+            <div class="entry-sub" style="${pairing.revoked_at ? 'color:var(--danger);' : 'color:var(--accent-teal);'}">${statusText}${createdText ? ` · ${escapeHtml(createdText)}` : ''}</div>
           </div>
           <div class="entry-actions">
-            ${pairing.revoked_at ? '' : `
-              <button class="btn btn-ghost btn-small" data-create-pairing="${escapeAttr(pairing.id)}">Napravi dodatni kod</button>
-              <button class="btn btn-danger btn-small" data-revoke-pairing="${escapeAttr(pairing.id)}">Opozovi kod</button>`}
+            ${pairing.revoked_at
+              ? `<button class="btn btn-ghost btn-small" data-delete-pairing="${escapeAttr(pairing.id)}">Obriši</button>`
+              : `
+                <button class="btn btn-ghost btn-small" data-create-pairing="${escapeAttr(pairing.id)}">Napravi dodatni kod</button>
+                <button class="btn btn-danger btn-small" data-revoke-pairing="${escapeAttr(pairing.id)}">Opozovi kod</button>`}
           </div>
-        </div>`).join('')
+        </div>`;
+      }).join('')
       : '<div class="empty-state"><p>Još nema uparenih TV uređaja.</p></div>';
 
+    const generatedCards = recentGeneratedPairings.map((item, idx) => {
+      const webUrl = `${window.location.origin}/hotel-tv-panel.html?pairing=${encodeURIComponent(item.code)}`;
+      return `
+        <div class="entry-card" style="flex-direction:column; align-items:stretch; border-color:rgba(201,164,105,0.45); background:rgba(201,164,105,0.06);">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <strong style="font-size:14px;">Soba ${escapeHtml(item.room)} — ${item.isCustom ? 'Tvoja lozinka za TV' : 'Kod za uparivanje'}</strong>
+            <button class="btn btn-ghost btn-small" type="button" data-dismiss-generated="${idx}">Sakrij</button>
+          </div>
+          <input readonly value="${escapeAttr(item.code)}" style="font-family:monospace; font-size:16px; letter-spacing:1.2px; width:100%; background:rgba(0,0,0,0.28); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text-main);">
+          <div class="field-hint" style="margin:0;">Unesi ovu lozinku/kod na TV za sobu ${escapeHtml(item.room)} (ne razlikuje velika i mala slova).</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <button class="btn btn-primary btn-small" type="button" data-copy-code="${idx}">Kopiraj kod</button>
+            <button class="btn btn-ghost btn-small" type="button" data-copy-link="${escapeAttr(webUrl)}">Kopiraj web link za browser TV</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    const supabaseWarning = !isSupabaseConfigured()
+      ? `<div class="entry-card" style="border-color:rgba(194,107,107,0.5); background:rgba(194,107,107,0.1); margin-bottom:16px;">
+          <div class="entry-body">
+            <div class="entry-title" style="color:#f4b6b6;">Supabase nije povezan</div>
+            <div class="entry-desc" style="white-space:normal;">Bez podešenih <code>VITE_SUPABASE_URL</code> i <code>VITE_SUPABASE_ANON_KEY</code> na Vercelu, drugi TV uređaji neće vidjeti kodove sa ovog računara.</div>
+          </div>
+        </div>`
+      : '';
+
     container.innerHTML = `
-      <div class="modal" style="max-width:620px; padding:0; background:transparent; border:0;">
-        <p class="content-sub" style="margin:0 0 16px;">Kod je vezan za sobu i omogućava TV-u samo čitanje hotelskog sadržaja i aktivne rezervacije te sobe. Kod se prikazuje samo jednom. Dodatni kod ne opoziva postojeći.</p>
+      <div class="modal" style="max-width:660px; padding:0; background:transparent; border:0;">
+        ${supabaseWarning}
+        <p class="content-sub" style="margin:0 0 16px;">Unesi broj sobe i po želji svoju lozinku (npr. <code>soba101</code> ili <code>1012026</code>) da je lakše ukucaš na TV-u. Ako ostaviš polje za lozinku prazno, sistem pravi kratki kod od 8 znakova.</p>
         ${pairingLoadError ? '<p class="field-hint">Kod je napravljen, ali lista uređaja se trenutno ne može osvježiti.</p>' : ''}
-        <div class="field">
-          <label for="pairingRoom">Broj sobe</label>
-          <input id="pairingRoom" maxlength="32" autocomplete="off" placeholder="npr. 204">
+        <div class="field-row">
+          <div class="field">
+            <label for="pairingRoom">Broj sobe</label>
+            <input id="pairingRoom" maxlength="32" autocomplete="off" placeholder="npr. 204">
+          </div>
+          <div class="field">
+            <label for="pairingCustomCode">Lozinka / kod za TV (opcionalno)</label>
+            <input id="pairingCustomCode" maxlength="64" autocomplete="off" placeholder="npr. soba204 (min. 4 znaka)">
+          </div>
         </div>
-        <button class="btn btn-primary" id="createPairingBtn" type="button">Napravi kod za uparivanje</button>
-        <div id="pairingCodeResult"></div>
-        <h3 style="margin:28px 0 12px;">TV uređaji</h3>
+        <div class="field-hint" style="margin:-6px 0 14px;">Lozinka ne razlikuje velika i mala slova. Za svaki TV u drugoj sobi napravi poseban kod/lozinku za tu sobu.</div>
+        <button class="btn btn-primary" id="createPairingBtn" type="button">Sačuvaj kod / lozinku za TV</button>
+        <div id="pairingCodeResult" style="display:flex; flex-direction:column; gap:10px; margin-top:${recentGeneratedPairings.length ? '18px' : '0'};">${generatedCards}</div>
+        <h3 style="margin:28px 0 12px;">TV uređaji (${pairings.filter((p) => !p.revoked_at).length} aktivnih)</h3>
         <div class="entry-list">${pairingRows}</div>
       </div>`;
 
-    if(generatedCode){
-      document.getElementById('pairingCodeResult').innerHTML = `
-        <div class="field" style="margin-top:18px;">
-          <label>Dodatni kod za sobu ${escapeHtml(generatedRoom)} — sačuvaj ga</label>
-          <input id="generatedPairingCode" readonly value="${escapeAttr(generatedCode)}" style="font-family:monospace;letter-spacing:1px;">
-          <div class="field-hint">Sačuvaj ovaj kod na sigurnom. Neće se moći ponovo prikazati. Uparivanje postojećeg koda ostaje aktivno.</div>
-          <button class="btn btn-ghost btn-small" id="copyPairingCodeBtn" type="button" style="margin-top:8px;">Kopiraj kod</button>
-        </div>`;
-      document.getElementById('copyPairingCodeBtn').addEventListener('click', async () => {
+    if(pairingLoadError) setStatus('Kod je napravljen; lista se nije osvježila', 'err');
+
+    container.querySelectorAll('[data-copy-code]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const item = recentGeneratedPairings[Number(button.dataset.copyCode)];
+        if(!item) return;
         try{
-          await navigator.clipboard.writeText(generatedCode);
-          setStatus('Kod je kopiran', 'ok');
+          await navigator.clipboard.writeText(item.code);
+          setStatus(`Kod za sobu ${item.room} je kopiran`, 'ok');
         }catch(error){
           setStatus('Kopiranje nije uspjelo', 'err');
           console.error('Failed copying TV pairing code', error);
         }
       });
-    }
-    if(pairingLoadError) setStatus('Kod je napravljen; lista se nije osvježila', 'err');
+    });
+
+    container.querySelectorAll('[data-copy-link]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        try{
+          await navigator.clipboard.writeText(button.dataset.copyLink);
+          setStatus('Web link za TV je kopiran', 'ok');
+        }catch(error){
+          setStatus('Kopiranje linka nije uspjelo', 'err');
+          console.error('Failed copying web TV pairing link', error);
+        }
+      });
+    });
+
+    container.querySelectorAll('[data-dismiss-generated]').forEach((button) => {
+      button.addEventListener('click', () => {
+        recentGeneratedPairings.splice(Number(button.dataset.dismissGenerated), 1);
+        renderTvPairings();
+      });
+    });
 
     document.getElementById('createPairingBtn').addEventListener('click', async (event) => {
       const button = event.currentTarget;
       const roomNumber = document.getElementById('pairingRoom').value.trim();
+      const customCode = document.getElementById('pairingCustomCode').value.trim();
       if(!roomNumber){
         setStatus('Unesi broj sobe', 'err');
+        return;
+      }
+      if(customCode && (customCode.length < 4 || customCode.length > 64)){
+        setStatus('Lozinka mora imati između 4 i 64 znaka', 'err');
         return;
       }
 
       button.disabled = true;
       setStatus('Kreiranje koda…', '');
       try{
-        const pairing = await createTvPairing(roomNumber);
-        setStatus('Kod je kreiran', 'ok');
-        await renderTvPairings(pairing.code, roomNumber);
+        const pairing = await createTvPairing(roomNumber, customCode);
+        setStatus(`TV kod za sobu ${roomNumber} je spreman`, 'ok');
+        await renderTvPairings(pairing);
       }catch(error){
         setStatus(error.message || 'Greška pri kreiranju koda', 'err');
         console.error('Failed creating TV pairing', error);
@@ -750,7 +830,7 @@ async function renderTvPairings(generatedCode = '', generatedRoom = ''){
         try{
           const newPairing = await createTvPairing(roomNumber);
           setStatus('Dodatni kod je kreiran; postojeće uparivanje je ostalo aktivno', 'ok');
-          await renderTvPairings(newPairing.code, roomNumber);
+          await renderTvPairings(newPairing);
         }catch(error){
           setStatus(error.message || 'Greška pri kreiranju dodatnog koda', 'err');
           console.error('Failed creating additional TV pairing', error);
@@ -770,6 +850,22 @@ async function renderTvPairings(generatedCode = '', generatedRoom = ''){
         }catch(error){
           setStatus(error.message || 'Greška pri opozivu koda', 'err');
           console.error('Failed revoking TV pairing', error);
+          button.disabled = false;
+        }
+      });
+    });
+
+    container.querySelectorAll('[data-delete-pairing]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        if(!confirm('Trajno obrisati ovo opozvano uparivanje?')) return;
+        button.disabled = true;
+        try{
+          await deleteTvPairing(button.dataset.deletePairing);
+          setStatus('Opozvano uparivanje je obrisano', 'ok');
+          await renderTvPairings();
+        }catch(error){
+          setStatus(error.message || 'Greška pri brisanju uparivanja', 'err');
+          console.error('Failed deleting TV pairing', error);
           button.disabled = false;
         }
       });

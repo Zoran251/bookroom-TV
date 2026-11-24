@@ -1171,6 +1171,68 @@
     .tv-lang-switch button{ min-width:32px; min-height:30px; padding:0 7px; font-size:11px; }
     .info-header-status .tv-lang-switch{ display:none; }
   }
+  .room-pill:empty{ display:none; }
+  .room-pill.clickable-pair{ cursor:pointer; }
+  .room-pill.clickable-pair:hover{ border-color:var(--accent-gold); }
+  .web-pairing-modal{
+    position:fixed;
+    inset:0;
+    z-index:120;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    background:rgba(7,17,29,0.96);
+    backdrop-filter:blur(8px);
+  }
+  .web-pairing-modal[hidden]{ display:none; }
+  .web-pairing-card{
+    width:min(520px, 100%);
+    padding:32px;
+    border-radius:18px;
+    border:1px solid rgba(212,175,55,0.35);
+    background:linear-gradient(155deg,#17283b,#0d1825);
+    color:var(--text-main);
+    box-shadow:0 24px 64px rgba(0,0,0,0.55);
+  }
+  .web-pairing-card h2{
+    font-family:'Fraunces',serif;
+    font-size:28px;
+    font-weight:500;
+    margin:0 0 10px;
+  }
+  .web-pairing-card p{
+    font-size:14px;
+    color:var(--text-muted);
+    line-height:1.5;
+    margin:0 0 18px;
+  }
+  .web-pairing-input{
+    width:100%;
+    padding:12px 14px;
+    border-radius:10px;
+    border:1px solid rgba(255,255,255,0.18);
+    background:rgba(0,0,0,0.3);
+    color:#fff;
+    font-size:16px;
+    letter-spacing:0.04em;
+    margin-bottom:10px;
+  }
+  .web-pairing-input:focus{
+    outline:none;
+    border-color:var(--accent-gold);
+  }
+  .web-pairing-error{
+    min-height:20px;
+    font-size:13px;
+    color:#ff9e9e;
+    margin-bottom:14px;
+  }
+  .web-pairing-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
 </style>
 </head>
 <body>
@@ -1352,10 +1414,23 @@
   </div>
 </div>
 
+<div class="web-pairing-modal" id="webPairingModal" role="dialog" aria-modal="true" aria-labelledby="webPairingTitle" hidden>
+  <form class="web-pairing-card" id="webPairingForm">
+    <h2 id="webPairingTitle">Poveži Hotel TV sa sobom</h2>
+    <p>U admin panelu otvori „Uparivanje TV-a“, napravi lozinku ili kod za ovu sobu i unesi ga ispod.</p>
+    <input class="web-pairing-input" id="webPairingInput" type="text" autocomplete="off" maxlength="64" placeholder="Lozinka ili kod za uparivanje (min. 4 znaka)">
+    <div class="web-pairing-error" id="webPairingError" role="alert"></div>
+    <div class="web-pairing-actions">
+      <button class="btn-pow btn-pow-primary" id="webPairingSubmit" type="submit">Poveži ovaj TV</button>
+      <button class="btn-pow btn-pow-ghost" id="webPairingCancel" type="button" hidden>Otkaži</button>
+    </div>
+  </form>
+</div>
+
 <script src="/pwa-register.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
-  import { loadBookings, loadHotelHeader, loadModuleEntries, subscribeToHotelUpdates, translateEntriesOnDemand } from './admin/src/lib/adminStorage.js';
+  import { clearWebTvPairingCode, getCurrentTvPairingCode, hasAndroidTvBridge, loadBookings, loadHotelHeader, loadModuleEntries, loadTvRoom, setWebTvPairingCode, subscribeToHotelUpdates, translateEntriesOnDemand } from './admin/src/lib/adminStorage.js';
 
   const SUPPORTED_LANGUAGES = ['bs', 'de', 'en', 'it'];
   const UI_STRINGS = {
@@ -1735,6 +1810,66 @@
     if (introHotelCity) introHotelCity.textContent = tr(currentHotelHeader, 'city');
   }
 
+  const webPairingModal = document.getElementById('webPairingModal');
+  const webPairingForm = document.getElementById('webPairingForm');
+  const webPairingInput = document.getElementById('webPairingInput');
+  const webPairingError = document.getElementById('webPairingError');
+  const webPairingCancel = document.getElementById('webPairingCancel');
+
+  function openWebPairingModal(errorMessage = '', allowCancel = false) {
+    if (!webPairingModal || hasAndroidTvBridge()) return;
+    webPairingError.textContent = errorMessage || '';
+    webPairingInput.value = getCurrentTvPairingCode() || '';
+    webPairingCancel.hidden = !allowCancel;
+    webPairingModal.hidden = false;
+    setTimeout(() => webPairingInput.focus(), 20);
+  }
+
+  function closeWebPairingModal() {
+    if (!webPairingModal) return;
+    webPairingModal.hidden = true;
+    webPairingError.textContent = '';
+  }
+
+  function shouldPromptWebPairing(error) {
+    if (hasAndroidTvBridge()) return false;
+    const msg = String(error?.message || '').toLowerCase();
+    return (
+      msg.includes('admin nalog nije povezan') ||
+      msg.includes('tv nije uparen') ||
+      msg.includes('kod ili lozinka') ||
+      msg.includes('nije važeć') ||
+      msg.includes('opozvan') ||
+      msg.includes('invalid or revoked')
+    );
+  }
+
+  webPairingCancel?.addEventListener('click', closeWebPairingModal);
+  webPairingForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    webPairingError.textContent = '';
+    const rawCode = webPairingInput.value.trim();
+    try {
+      setWebTvPairingCode(rawCode);
+      await loadHotelHeader();
+      closeWebPairingModal();
+      dataLoadIssues.clear();
+      dataLoadNotice.hidden = true;
+      await refreshConsoleLive();
+    } catch (error) {
+      clearWebTvPairingCode();
+      webPairingError.textContent = error?.message || 'Kod ili lozinka za uparivanje nije ispravna.';
+      webPairingInput.focus();
+    }
+  });
+
+  if (!hasAndroidTvBridge()) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('pair') === '1') {
+      openWebPairingModal('', Boolean(getCurrentTvPairingCode()));
+    }
+  }
+
   async function initializeHotelHeader() {
     try {
       const hotel = await loadHotelHeader();
@@ -1747,7 +1882,11 @@
       }
     } catch (error) {
       console.error('Failed loading hotel header', error);
-      reportDataLoadIssue(`Podaci hotela nisu učitani: ${error.message || 'nepoznata greška.'}`);
+      if (shouldPromptWebPairing(error)) {
+        openWebPairingModal(getCurrentTvPairingCode() ? error.message : '', false);
+      } else {
+        reportDataLoadIssue(`Podaci hotela nisu učitani: ${error.message || 'nepoznata greška.'}`);
+      }
     }
   }
 
@@ -1756,7 +1895,9 @@
       return await loadModuleEntries(moduleName);
     } catch (error) {
       console.error('Failed loading admin data for', moduleName, error);
-      reportDataLoadIssue(`Unosi "${moduleName}" nisu učitani: ${error.message || 'nepoznata greška.'}`);
+      if (!shouldPromptWebPairing(error)) {
+        reportDataLoadIssue(`Unosi "${moduleName}" nisu učitani: ${error.message || 'nepoznata greška.'}`);
+      }
       return [];
     }
   }
@@ -1787,24 +1928,42 @@
     document.getElementById('infoHeaderGuest').hidden = !guestName && !roomNumber;
   }
 
+  function normalizeRoomValue(value) {
+    return typeof value === 'string' ? value.trim().toLowerCase() : '';
+  }
+
   async function initializeGuestData() {
     const params = new URLSearchParams(window.location.search);
-    const requestedRoom = params.get('room') || '';
+    const requestedRoom = (params.get('room') || '').trim();
     const guestName = document.getElementById('guestName');
     const roomNumber = document.getElementById('roomNumber');
 
     try {
-      const bookings = await loadBookings();
+      const [bookings, pairedRoom] = await Promise.all([
+        loadBookings(),
+        loadTvRoom().catch(() => ''),
+      ]);
       const today = new Date().toISOString().slice(0, 10);
       const currentBookings = bookings.filter((booking) =>
         booking.checkIn <= today && booking.checkOut >= today,
       );
-      const booking = requestedRoom
-        ? bookings.find((item) => item.room === requestedRoom)
+      const targetRoom = requestedRoom || pairedRoom;
+      const booking = targetRoom
+        ? (currentBookings.find((item) => normalizeRoomValue(item.room) === normalizeRoomValue(targetRoom)) ||
+           bookings.find((item) => normalizeRoomValue(item.room) === normalizeRoomValue(targetRoom)))
         : currentBookings[0];
 
       guestName.textContent = booking?.guestName || '';
-      roomNumber.textContent = booking?.room || '';
+      roomNumber.textContent = booking?.room || pairedRoom || requestedRoom || '';
+
+      const canSwitchWebPairing = !hasAndroidTvBridge() && Boolean(getCurrentTvPairingCode());
+      roomNumber.classList.toggle('clickable-pair', canSwitchWebPairing);
+      roomNumber.title = canSwitchWebPairing ? 'Klikni za promjenu sobe / koda za uparivanje' : '';
+      if (canSwitchWebPairing && roomNumber.dataset.pairBound !== 'true') {
+        roomNumber.addEventListener('click', () => openWebPairingModal('', true));
+        roomNumber.dataset.pairBound = 'true';
+      }
+
       renderInfoGuestHeader();
     } catch (error) {
       console.error('Failed loading guest data', error);
