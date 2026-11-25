@@ -1,8 +1,8 @@
-// Real-time TV panel translation for Bosnian, German, English and Italian.
+// Real-time TV panel translation for Croatian, German, English and Italian.
 // Stores the selected language locally and translates visible text on demand.
 (function () {
-  const SUPPORTED = ['bs', 'de', 'en', 'it'];
-  const LABELS = { bs: 'BS', de: 'DE', en: 'EN', it: 'IT' };
+  const SUPPORTED = ['hr', 'de', 'en', 'it'];
+  const LABELS = { hr: 'HR', de: 'DE', en: 'EN', it: 'IT' };
   const TRANSLATION_URL = 'https://api.mymemory.translated.net/get';
   const CACHE_PREFIX = 'tvTextTranslation:';
   const originalText = new WeakMap();
@@ -12,14 +12,17 @@
   function getInitialLanguage() {
     const params = new URLSearchParams(window.location.search);
     const fromUrl = params.get('lang');
+    if (fromUrl === 'bs') return 'hr';
     if (SUPPORTED.includes(fromUrl)) return fromUrl;
-    return localStorage.getItem('tvLanguage') || 'bs';
+    const saved = localStorage.getItem('tvLanguage');
+    if (saved === 'bs') return 'hr';
+    return SUPPORTED.includes(saved) ? saved : 'hr';
   }
 
   function addLanguageToUrl(url) {
     try {
       const target = new URL(url, window.location.href);
-      if (activeLanguage !== 'bs') target.searchParams.set('lang', activeLanguage);
+      if (activeLanguage !== 'hr') target.searchParams.set('lang', activeLanguage);
       else target.searchParams.delete('lang');
       return target.toString();
     } catch (_) {
@@ -32,7 +35,7 @@
   }
 
   async function translateText(text, target) {
-    const source = 'bs';
+    const source = 'hr';
     const cleaned = text.replace(/\s+/g, ' ').trim();
     if (!cleaned || target === source) return text;
 
@@ -79,7 +82,7 @@
 
     document.documentElement.lang = language;
     const params = new URLSearchParams(window.location.search);
-    if (language === 'bs') params.delete('lang');
+    if (language === 'hr') params.delete('lang');
     else params.set('lang', language);
     const nextUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}${window.location.hash}`;
     window.history.replaceState({}, '', nextUrl);
@@ -87,7 +90,7 @@
     const nodes = collectTextNodes(document.body);
 
     translateQueue = translateQueue.then(async () => {
-      if (language === 'bs') {
+      if (language === 'hr') {
         nodes.forEach((node) => {
           const original = originalText.get(node);
           if (original !== undefined) node.textContent = original;
@@ -158,7 +161,7 @@
       button.dataset.language = language;
       button.className = language === activeLanguage ? 'active' : '';
       button.setAttribute('aria-label', {
-        bs: 'Bosanski', de: 'Deutsch', en: 'English', it: 'Italiano'
+        hr: 'Hrvatski', de: 'Deutsch', en: 'English', it: 'Italiano'
       }[language]);
       button.addEventListener('click', () => {
         selector.querySelectorAll('button').forEach((item) => item.classList.remove('active'));
@@ -174,12 +177,12 @@
   window.tvTranslationAddLanguageToUrl = addLanguageToUrl;
 
   const observer = new MutationObserver(() => {
-    if (activeLanguage === 'bs') return;
+    if (activeLanguage === 'hr') return;
     clearTimeout(window.__tvTranslationTimer);
     window.__tvTranslationTimer = setTimeout(() => applyLanguage(activeLanguage), 180);
   });
 
   injectSelector();
-  if (activeLanguage !== 'bs') applyLanguage(activeLanguage);
+  if (activeLanguage !== 'hr') applyLanguage(activeLanguage);
   observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 })();

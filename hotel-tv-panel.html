@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="bs">
+<html lang="hr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1246,11 +1246,11 @@
     <h1 class="language-intro-heading" id="languageIntroHeading">Dobrodošli · Welcome · Willkommen · Benvenuti</h1>
     <p class="language-intro-sub">Odaberite jezik · Choose your language · Sprache wählen · Scegli la lingua</p>
     <div class="language-intro-grid" role="group" aria-label="Odabir jezika / Language selection">
-      <button type="button" class="language-intro-card" data-intro-language="bs">
-        <span class="language-intro-code">BS</span>
+      <button type="button" class="language-intro-card" data-intro-language="hr">
+        <span class="language-intro-code">HR</span>
         <div>
-          <div class="language-intro-name">Bosanski</div>
-          <div class="language-intro-hint">Nastavi na bosanskom</div>
+          <div class="language-intro-name">Hrvatski</div>
+          <div class="language-intro-hint">Nastavi na hrvatskom</div>
         </div>
       </button>
       <button type="button" class="language-intro-card" data-intro-language="en">
@@ -1299,7 +1299,7 @@
 
       <div class="header-actions">
         <nav class="tv-lang-switch" aria-label="Odabir jezika / Language">
-          <button type="button" data-language="bs" aria-label="Bosanski">BS</button>
+          <button type="button" data-language="hr" aria-label="Hrvatski">HR</button>
           <button type="button" data-language="de" aria-label="Deutsch">DE</button>
           <button type="button" data-language="en" aria-label="English">EN</button>
           <button type="button" data-language="it" aria-label="Italiano">IT</button>
@@ -1379,7 +1379,7 @@
           <span class="info-header-room" id="infoRoomNumber"></span>
         </div>
         <nav class="tv-lang-switch" aria-label="Odabir jezika / Language">
-          <button type="button" data-language="bs" aria-label="Bosanski">BS</button>
+          <button type="button" data-language="hr" aria-label="Hrvatski">HR</button>
           <button type="button" data-language="de" aria-label="Deutsch">DE</button>
           <button type="button" data-language="en" aria-label="English">EN</button>
           <button type="button" data-language="it" aria-label="Italiano">IT</button>
@@ -1432,10 +1432,10 @@
 <script type="module">
   import { clearWebTvPairingCode, getCurrentTvPairingCode, hasAndroidTvBridge, loadBookings, loadHotelHeader, loadModuleEntries, loadTvRoom, setWebTvPairingCode, subscribeToHotelUpdates, translateEntriesOnDemand } from './admin/src/lib/adminStorage.js';
 
-  const SUPPORTED_LANGUAGES = ['bs', 'de', 'en', 'it'];
+  const SUPPORTED_LANGUAGES = ['hr', 'de', 'en', 'it'];
   const UI_STRINGS = {
-    bs: {
-      locale: 'bs-BA',
+    hr: {
+      locale: 'hr-HR',
       welcomeGuest: (name) => `Dobrodošli, ${name}!`,
       tiles: {
         hotel: 'Hotelske informacije',
@@ -1673,19 +1673,28 @@
 
   let introVisible = shouldShowLanguageIntro();
 
+  function normalizeSelectedLanguage(code) {
+    if (code === 'bs') return 'hr';
+    return SUPPORTED_LANGUAGES.includes(code) ? code : null;
+  }
+
   function getInitialLanguage() {
     const params = new URLSearchParams(window.location.search);
-    const fromUrl = params.get('lang');
-    if (SUPPORTED_LANGUAGES.includes(fromUrl)) return fromUrl;
-    const saved = localStorage.getItem('tvLanguage');
-    return SUPPORTED_LANGUAGES.includes(saved) ? saved : 'bs';
+    const fromUrl = normalizeSelectedLanguage(params.get('lang'));
+    if (fromUrl) return fromUrl;
+    const saved = normalizeSelectedLanguage(localStorage.getItem('tvLanguage'));
+    if (saved) return saved;
+    return 'hr';
   }
 
   let activeLanguage = getInitialLanguage();
+  if (localStorage.getItem('tvLanguage') === 'bs') {
+    localStorage.setItem('tvLanguage', 'hr');
+  }
   document.documentElement.lang = activeLanguage;
 
   function ui() {
-    return UI_STRINGS[activeLanguage] || UI_STRINGS.bs;
+    return UI_STRINGS[activeLanguage] || UI_STRINGS.hr;
   }
 
   const ON_DEMAND_CACHE_KEY = 'bookroom_tv_ondemand_translations_v1';
@@ -1716,7 +1725,7 @@
 
   function tr(record, field) {
     if (!record) return '';
-    if (activeLanguage === 'bs') return record[field] || '';
+    if (activeLanguage === 'hr') return record[field] || '';
     const stored = record.translations?.[activeLanguage]?.[field];
     if (typeof stored === 'string' && stored.trim()) return stored;
     const cacheId = record.id ? `${record.id}:${field}` : '';
@@ -1731,7 +1740,7 @@
   }
 
   async function ensureTranslationsForRecords(records, fieldsToTranslate) {
-    if (activeLanguage === 'bs' || !Array.isArray(records) || !records.length) return false;
+    if (activeLanguage === 'hr' || !Array.isArray(records) || !records.length) return false;
     const pendingItems = [];
     for (const record of records) {
       if (!record || !record.id) continue;
@@ -1876,7 +1885,7 @@
       if (!hotel) return;
       currentHotelHeader = hotel;
       applyHotelHeaderDisplay();
-      if (activeLanguage !== 'bs') {
+      if (activeLanguage !== 'hr') {
         const updated = await ensureTranslationsForRecords([hotel], ['welcome_text', 'city']);
         if (updated) applyHotelHeaderDisplay();
       }
@@ -2672,7 +2681,7 @@
 
     renderInfoEntries(entries);
 
-    if (activeLanguage !== 'bs' && entries.length) {
+    if (activeLanguage !== 'hr' && entries.length) {
       const fields = category === 'tv' || category === 'radio'
         ? ['value']
         : ['title', 'subtitle', 'description', 'location', 'notes'];
@@ -2826,7 +2835,7 @@
         marketingIndex += 1;
         renderMarketingSlide();
       }, 5000);
-      if (activeLanguage !== 'bs') {
+      if (activeLanguage !== 'hr') {
         const translatedAny = await ensureTranslationsForRecords(cachedMarketingEntries, ['title', 'notes', 'description']);
         if (translatedAny) renderMarketingSlide();
       }
@@ -2925,7 +2934,7 @@
     document.documentElement.lang = language;
 
     const params = new URLSearchParams(window.location.search);
-    if (language === 'bs') params.delete('lang');
+    if (language === 'hr') params.delete('lang');
     else params.set('lang', language);
     const nextUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}${window.location.hash}`;
     window.history.replaceState({}, '', nextUrl);
@@ -2951,7 +2960,7 @@
       renderInfoPage();
     }
 
-    if (language !== 'bs') {
+    if (language !== 'hr') {
       const promises = [];
       if (currentHotelHeader) {
         promises.push(

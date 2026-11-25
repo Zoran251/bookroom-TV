@@ -3,7 +3,7 @@
   "name": "Bookroom TV",
   "short_name": "Bookroom TV",
   "description": "Bookroom TV panel za hotel",
-  "lang": "bs",
+  "lang": "hr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
