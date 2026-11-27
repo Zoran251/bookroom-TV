@@ -409,7 +409,24 @@
     <div class="auth-error" id="authError" role="alert"></div>
     <button class="btn btn-primary" id="authSubmit" type="submit">Prijavi se</button>
     <a class="auth-toggle" id="authToggle" href="?mode=register">Nemaš admin nalog? Registruj hotel</a>
+    <a class="auth-toggle" href="/supervisor.html" style="margin-top:8px; opacity:0.72;">Supervizor prijava</a>
   </form>
+</div>
+
+<div class="auth-gate" id="blockedGate" style="display:none;">
+  <div class="auth-card" style="border-color:rgba(194,107,107,0.45);">
+    <h1 style="color:#f4b6b6;">Nalog je blokiran</h1>
+    <p id="blockedMessage">Pristup ovom admin nalogu je privremeno blokiran od strane supervizora.</p>
+    <div class="field" style="background:rgba(194,107,107,0.08); border:1px solid rgba(194,107,107,0.28); border-radius:10px; padding:12px;">
+      <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); margin-bottom:4px;">Razlog blokade</div>
+      <div id="blockedReasonText" style="font-size:14px; font-weight:600; color:#f7d0d0;">Neplaćena pretplata ili kršenje uslova korištenja.</div>
+      <div id="blockedDateText" style="font-size:12px; color:var(--text-dim); margin-top:6px;"></div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <button class="btn btn-primary" id="blockedRefreshBtn" type="button">Provjeri status naloga</button>
+      <button class="btn btn-ghost" id="blockedLogoutBtn" type="button">Odjava</button>
+    </div>
+  </div>
 </div>
  
 <div class="topbar">
@@ -517,6 +534,36 @@ function authSuccess(message){
   authError.textContent = message;
 }
 
+const blockedGate = document.getElementById('blockedGate');
+const blockedReasonText = document.getElementById('blockedReasonText');
+const blockedDateText = document.getElementById('blockedDateText');
+const blockedRefreshBtn = document.getElementById('blockedRefreshBtn');
+const blockedLogoutBtn = document.getElementById('blockedLogoutBtn');
+
+function showBlockedGate(context){
+  authGate.style.display = 'none';
+  blockedReasonText.textContent = context?.blockReason || 'Nalog je blokiran od strane supervizora.';
+  blockedDateText.textContent = context?.blockedAt ? `Blokirano: ${formatPairingDate(context.blockedAt)}` : '';
+  blockedGate.style.display = 'flex';
+}
+
+function hideBlockedGate(){
+  blockedGate.style.display = 'none';
+}
+
+async function handlePossibleBlockError(){
+  try{
+    const context = await getAdminContext();
+    if(context?.isBlocked){
+      showBlockedGate(context);
+      return true;
+    }
+  }catch{
+    // ignore context recheck errors
+  }
+  return false;
+}
+
 async function authenticate(){
   authSubmit.disabled = true;
   authError.textContent = '';
@@ -538,7 +585,16 @@ async function authenticate(){
     } else {
       await signInAdmin(username, pin);
     }
+    const context = await getAdminContext();
+    if(context?.isBlocked){
+      showBlockedGate(context);
+      return;
+    }
+    hideBlockedGate();
     authGate.style.display = 'none';
+    if(context?.hotel?.name){
+      document.querySelector('.brand-name').firstChild.textContent = `${context.hotel.name} `;
+    }
     await renderAll();
   }catch(error){
     authMessage(error);
@@ -553,8 +609,37 @@ authForm.addEventListener('submit', (event) => {
 });
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await signOutAdmin();
+  hideBlockedGate();
   authGate.style.display = 'flex';
   setAuthMode(false);
+});
+blockedLogoutBtn.addEventListener('click', async () => {
+  await signOutAdmin();
+  hideBlockedGate();
+  authGate.style.display = 'flex';
+  setAuthMode(false);
+});
+blockedRefreshBtn.addEventListener('click', async () => {
+  blockedRefreshBtn.disabled = true;
+  try{
+    const context = await getAdminContext();
+    if(!context){
+      hideBlockedGate();
+      authGate.style.display = 'flex';
+      return;
+    }
+    if(context.isBlocked){
+      showBlockedGate(context);
+      return;
+    }
+    hideBlockedGate();
+    if(context.hotel?.name){
+      document.querySelector('.brand-name').firstChild.textContent = `${context.hotel.name} `;
+    }
+    await renderAll();
+  }finally{
+    blockedRefreshBtn.disabled = false;
+  }
 });
 mobileMenuToggle.addEventListener('click', () => {
   const isOpen = mobileSidebar.classList.toggle('mobile-open');
@@ -632,6 +717,7 @@ async function renderHotelHeader(){
           setStatus('Sačuvano i prevedeno (EN, DE, IT)', 'ok');
         }
       }catch(error){
+        if(await handlePossibleBlockError()) return;
         setStatus('Greška pri čuvanju', 'err');
         console.error('Failed saving hotel header', error);
       }finally{
@@ -639,6 +725,7 @@ async function renderHotelHeader(){
       }
     });
   }catch(error){
+    if(await handlePossibleBlockError()) return;
     container.innerHTML = '<div class="empty-state"><p>Nije moguće učitati informacije hotela.</p></div>';
     console.error('Failed loading hotel header', error);
   }
@@ -897,6 +984,7 @@ async function saveCategory(catId, entries){
     }
   }catch(e){
     console.error('Failed saving category', catId, e);
+    if(await handlePossibleBlockError()) return;
     setStatus('Greška pri čuvanju', 'err');
   }
 }
@@ -940,6 +1028,7 @@ async function saveBookingList(entries){
     setTimeout(()=> setStatus('Spremno',''), 1500);
   }catch(e){
     console.error('Failed saving bookings', e);
+    if(await handlePossibleBlockError()) return;
     setStatus('Greška pri čuvanju', 'err');
   }
 }
@@ -1594,6 +1683,11 @@ document.getElementById('cancelBtn').addEventListener('click', closeModal);
 document.getElementById('overlay').addEventListener('click', (e) => { if(e.target.id === 'overlay') closeModal(); });
  
 async function renderAll(){
+  const context = await getAdminContext();
+  if(context?.isBlocked){
+    showBlockedGate(context);
+    return;
+  }
   await renderSidebar();
   const addBtnLabel = document.getElementById('addBtn');
   if(state.current === 'hotelHeader'){
@@ -1613,7 +1707,12 @@ async function renderAll(){
 async function boot(){
   try{
     const context = await getAdminContext();
+    if(context?.isBlocked){
+      showBlockedGate(context);
+      return;
+    }
     if(context){
+      hideBlockedGate();
       authGate.style.display = 'none';
       if(context.hotel?.name){
         document.querySelector('.brand-name').firstChild.textContent = `${context.hotel.name} `;

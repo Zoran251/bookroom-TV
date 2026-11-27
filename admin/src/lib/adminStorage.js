@@ -559,6 +559,9 @@ let tvConsoleDataCacheTime = 0
 
 function formatTvPairingErrorMessage(error, data) {
   const raw = String(error?.message || error?.details || '').toLowerCase()
+  if (raw.includes('admin account is blocked')) {
+    return 'Pristup za ovaj hotel je privremeno blokiran (neplaćena pretplata ili kršenje uslova korištenja).'
+  }
   if (raw.includes('invalid or revoked tv pairing code') || raw.includes('invalid tv pairing code')) {
     return 'Kod ili lozinka za uparivanje nije ispravna ili je opozvana.'
   }
@@ -584,6 +587,17 @@ async function loadTvConsoleData(forceRefresh = false, { silentOnError = false }
     for (const [hotelId, list] of Object.entries(store.pairings || {})) {
       const pairing = list.find((item) => item.code_hash === codeHash && !item.revoked_at)
       if (pairing) {
+        const ownerBlocked = (store.accounts || []).some(
+          (account) => account.hotelId === hotelId && Boolean(account.isBlocked),
+        )
+        if (ownerBlocked) {
+          const blockedMsg = 'Pristup za ovaj hotel je privremeno blokiran (neplaćena pretplata ili kršenje uslova korištenja).'
+          if (!silentOnError) {
+            const bridge = typeof window !== 'undefined' ? window.HotelTvAndroid : null
+            bridge?.showPairingError?.(blockedMsg)
+          }
+          throw new Error(blockedMsg)
+        }
         const hotel = store.hotels.find((h) => h.id === hotelId) || null
         const entriesByMod = store.entries[hotelId] || {}
         const entries = Object.entries(entriesByMod).flatMap(([moduleName, rows]) =>
@@ -623,7 +637,10 @@ async function loadTvConsoleData(forceRefresh = false, { silentOnError = false }
   if (error || !data || !data.hotel) {
     const friendlyMessage = formatTvPairingErrorMessage(error, data)
     const raw = String(error?.message || '').toLowerCase()
-    const isCodeInvalid = raw.includes('invalid or revoked tv pairing code') || raw.includes('invalid tv pairing code')
+    const isCodeInvalid =
+      raw.includes('invalid or revoked tv pairing code') ||
+      raw.includes('invalid tv pairing code') ||
+      raw.includes('admin account is blocked')
     if (!silentOnError || isCodeInvalid) {
       const bridge = typeof window !== 'undefined' ? window.HotelTvAndroid : null
       bridge?.showPairingError?.(friendlyMessage)
@@ -952,20 +969,43 @@ export async function getAdminContext() {
       user: { id: account.id, email: `${account.username}@admins.bookroom.local` },
       hotelId: hotel.id,
       hotel,
+      isBlocked: Boolean(account.isBlocked),
+      blockReason: account.blockReason || '',
+      blockedAt: account.blockedAt || null,
     }
   }
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
+  if (String(user.email || '').toLowerCase() === SUPERVISOR_EMAIL) return null
 
-  const { data, error } = await supabase
+  let data = null
+  let error = null
+  ;({ data, error } = await supabase
     .from('admin_hotel_accounts')
-    .select('hotel_id, username, hotel_name, city, hotels(id, name, city)')
+    .select('hotel_id, username, hotel_name, city, is_blocked, block_reason, blocked_at, hotels(id, name, city)')
     .eq('user_id', user.id)
-    .maybeSingle()
+    .maybeSingle())
+
+  if (error && (error.code === '42703' || String(error.message || '').toLowerCase().includes('is_blocked'))) {
+    ;({ data, error } = await supabase
+      .from('admin_hotel_accounts')
+      .select('hotel_id, username, hotel_name, city, hotels(id, name, city)')
+      .eq('user_id', user.id)
+      .maybeSingle())
+  }
 
   if (error) throw error
-  return data ? { user, hotelId: data.hotel_id, hotel: data.hotels } : null
+  return data
+    ? {
+        user,
+        hotelId: data.hotel_id,
+        hotel: data.hotels,
+        isBlocked: Boolean(data.is_blocked),
+        blockReason: data.block_reason || '',
+        blockedAt: data.blocked_at || null,
+      }
+    : null
 }
 
 export async function loadHotelHeader() {
@@ -1075,7 +1115,207 @@ export async function saveHotelHeader(values) {
 async function getHotelId() {
   const context = await getAdminContext()
   if (!context) throw new Error('Admin nalog nije povezan s hotelom.')
+  if (context.isBlocked) {
+    throw new Error(
+      context.blockReason
+        ? `Admin nalog je blokiran: ${context.blockReason}`
+        : 'Admin nalog je blokiran od strane supervizora.',
+    )
+  }
   return context.hotelId
+}
+
+export const SUPERVISOR_EMAIL = 'zorandostica2@gmail.com'
+
+function normalizeSupervisorEmail(email) {
+  return typeof email === 'string' ? email.trim().toLowerCase() : ''
+}
+
+function assertSupervisorEmail(email) {
+  if (normalizeSupervisorEmail(email) !== SUPERVISOR_EMAIL) {
+    throw new Error('Pristup odbijen: samo ovlašteni supervizor nalog ima pristup.')
+  }
+}
+
+async function hashSupervisorSecret(salt, password) {
+  const bytes = new TextEncoder().encode(`${salt}:${password}`)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+export function isLocalSupervisorSetupNeeded() {
+  if (supabase) return false
+  const store = readLocalStore()
+  return !store.supervisor?.passwordHash
+}
+
+export async function claimLocalSupervisorPassword(email, password) {
+  if (supabase) {
+    throw new Error('U produkciji se supervizor nalog aktivira u Supabase Auth-u.')
+  }
+  assertSupervisorEmail(email)
+  if (typeof password !== 'string' || password.length < 6) {
+    throw new Error('Lozinka mora imati najmanje 6 znakova.')
+  }
+  const store = readLocalStore()
+  if (store.supervisor?.passwordHash) {
+    throw new Error('Supervizor nalog je već aktiviran.')
+  }
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16))
+  const salt = Array.from(saltBytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+  const passwordHash = await hashSupervisorSecret(salt, password)
+  store.supervisor = { email: SUPERVISOR_EMAIL, salt, passwordHash }
+  store.supervisorSessionEmail = SUPERVISOR_EMAIL
+  writeLocalStore(store)
+  return { email: SUPERVISOR_EMAIL }
+}
+
+export async function signInSupervisor(email, password) {
+  assertSupervisorEmail(email)
+  if (typeof password !== 'string' || !password) {
+    throw new Error('Unesite lozinku.')
+  }
+
+  if (!supabase) {
+    const store = readLocalStore()
+    if (!store.supervisor?.passwordHash || !store.supervisor?.salt) {
+      throw new Error('Supervizor nalog još nije aktiviran u lokalnom pregledu.')
+    }
+    const candidateHash = await hashSupervisorSecret(store.supervisor.salt, password)
+    if (candidateHash !== store.supervisor.passwordHash) {
+      throw new Error('Pogrešan email ili lozinka supervizora.')
+    }
+    store.supervisorSessionEmail = SUPERVISOR_EMAIL
+    writeLocalStore(store)
+    return { email: SUPERVISOR_EMAIL }
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: SUPERVISOR_EMAIL,
+    password,
+  })
+  if (error) throw error
+
+  const userEmail = normalizeSupervisorEmail(data.user?.email)
+  if (userEmail !== SUPERVISOR_EMAIL) {
+    await supabase.auth.signOut()
+    throw new Error('Pristup odbijen: samo ovlašteni supervizor nalog ima pristup.')
+  }
+
+  const { data: hasAccess, error: accessError } = await supabase.rpc('supervisor_check_access')
+  if (accessError || !hasAccess) {
+    await supabase.auth.signOut()
+    if (accessError && String(accessError.message || '').toLowerCase().includes('supervisor_check_access')) {
+      throw new Error('U Supabase bazi nedostaje migracija za supervizora (20261127_supervisor_account.sql).')
+    }
+    throw new Error('Pristup odbijen: ovaj nalog nema supervizor ovlaštenja.')
+  }
+
+  return data.user
+}
+
+export async function signOutSupervisor() {
+  if (!supabase) {
+    const store = readLocalStore()
+    store.supervisorSessionEmail = null
+    writeLocalStore(store)
+    return
+  }
+  await supabase.auth.signOut()
+}
+
+export async function getSupervisorContext() {
+  if (!supabase) {
+    const store = readLocalStore()
+    if (normalizeSupervisorEmail(store.supervisorSessionEmail) !== SUPERVISOR_EMAIL) return null
+    return { email: SUPERVISOR_EMAIL }
+  }
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  if (normalizeSupervisorEmail(user.email) !== SUPERVISOR_EMAIL) return null
+
+  const { data: hasAccess, error } = await supabase.rpc('supervisor_check_access')
+  if (error || !hasAccess) return null
+  return { user, email: user.email }
+}
+
+export async function supervisorListAdmins() {
+  const ctx = await getSupervisorContext()
+  if (!ctx) throw new Error('Pristup odbijen: samo ovlašteni supervizor nalog ima pristup.')
+
+  if (!supabase) {
+    const store = readLocalStore()
+    return (store.accounts || []).map((account) => {
+      const hotel = (store.hotels || []).find((h) => h.id === account.hotelId) || {}
+      const entriesByMod = store.entries?.[account.hotelId] || {}
+      const entriesCount = Object.values(entriesByMod).reduce(
+        (sum, rows) => sum + (Array.isArray(rows) ? rows.length : 0),
+        0,
+      )
+      const bookingsCount = (store.bookings?.[account.hotelId] || []).length
+      const pairings = store.pairings?.[account.hotelId] || []
+      return {
+        user_id: account.id,
+        username: account.username,
+        email: `${account.username}@admins.bookroom.local`,
+        hotel_id: account.hotelId,
+        hotel_name: hotel.name || '',
+        city: hotel.city || '',
+        phone: hotel.phone || '',
+        contact_email: hotel.email || '',
+        created_at: account.createdAt || null,
+        is_blocked: Boolean(account.isBlocked),
+        block_reason: account.blockReason || null,
+        blocked_at: account.blockedAt || null,
+        tv_count: pairings.length,
+        active_tv_count: pairings.filter((p) => !p.revoked_at).length,
+        entries_count: entriesCount,
+        bookings_count: bookingsCount,
+      }
+    })
+  }
+
+  const { data, error } = await supabase.rpc('supervisor_list_admins')
+  if (error) throw error
+  return Array.isArray(data) ? data : []
+}
+
+export async function supervisorSetAdminBlock(targetUserId, blocked, reason = '') {
+  const ctx = await getSupervisorContext()
+  if (!ctx) throw new Error('Pristup odbijen: samo ovlašteni supervizor nalog ima pristup.')
+
+  if (!supabase) {
+    const store = readLocalStore()
+    const idx = (store.accounts || []).findIndex((item) => item.id === targetUserId)
+    if (idx < 0) throw new Error('Admin nalog nije pronađen.')
+    const cleanReason = blocked
+      ? (typeof reason === 'string' && reason.trim() ? reason.trim() : 'Nalog je blokiran od strane supervizora.')
+      : null
+    store.accounts[idx] = {
+      ...store.accounts[idx],
+      isBlocked: Boolean(blocked),
+      blockReason: cleanReason,
+      blockedAt: blocked ? new Date().toISOString() : null,
+    }
+    writeLocalStore(store)
+    notifyTvSync('supervisor_block')
+    return {
+      user_id: store.accounts[idx].id,
+      hotel_id: store.accounts[idx].hotelId,
+      is_blocked: store.accounts[idx].isBlocked,
+      block_reason: store.accounts[idx].blockReason,
+      blocked_at: store.accounts[idx].blockedAt,
+    }
+  }
+
+  const { data, error } = await supabase.rpc('supervisor_set_admin_block', {
+    target_user_id: targetUserId,
+    blocked: Boolean(blocked),
+    reason: typeof reason === 'string' && reason.trim() ? reason.trim() : null,
+  })
+  if (error) throw error
+  return data
 }
 
 function getFallbackStorage() {

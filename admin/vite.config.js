@@ -25,6 +25,7 @@ export default defineConfig({
         admin: path.resolve(adminDir, 'index.html'),
         tv: path.resolve(rootDir, 'hotel-tv-panel.html'),
         tvInfo: path.resolve(rootDir, 'tv-info.html'),
+        supervisor: path.resolve(rootDir, 'supervisor.html'),
       },
     },
   },
